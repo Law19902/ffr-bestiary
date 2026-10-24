@@ -24,41 +24,44 @@ battle sprite, and where it can be found.
 - Works with controller and keyboard; uses the game's own fonts, panels and icons
 
 ## Install
-Download from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or [Releases](../../releases)
-(`FFRBestiary.zip`), unzip it anywhere, and follow `README.txt` inside:
+Download `FFRBestiary-0.1.1.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
+[Releases](../../releases). There are no scripts or programs in it: you install [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)
+once yourself, then extract the zip into your game folder.
 
-1. Close the game. Double-click `Install.bat`.
-2. Start the game from Steam, wait for the title screen, quit.
-3. Double-click `Install.bat` again (needs an internet connection the first time).
+**UE4SS (one-time):**
+1. Download the `UE4SS_v3...` zip (not `zDEV`) from
+   [experimental-latest](https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest).
+2. In Steam: right-click the game > Manage > Browse local files, then open `FFRS\Binaries\Win64`.
+3. Extract the UE4SS zip there (`dwmapi.dll` and the `ue4ss` folder next to `FFRS-Win64-Shipping.exe`).
+4. In `ue4ss\UE4SS-settings.ini`, under `[EngineVersionOverride]`, set `MajorVersion = 5` and `MinorVersion = 6`.
 
-Run `Install.bat` again after a game update. `Uninstall.bat` removes everything and keeps your bestiary progress in
-`%LOCALAPPDATA%\FFRS-backups`.
+**The mod:** extract the zip into the game folder (the one containing `FFRS`). It adds
+`FFRS\Binaries\Win64\ue4ss\Mods\FFRBestiary` (enabled by the `enabled.txt` inside it) and
+`FFRS\Content\Paks\~mods\zzz_FFRBestiary_P.*` (the menu entry). Bestiary appears in the main menu above System.
 
-**Your game saves are never written.** The installer backs them up first anyway. Bestiary progress lives in its own
-files next to the mod (one per save slot).
+**Uninstall:** delete those two. **Your game saves are never written**; Bestiary progress lives in its own files in
+the mod folder (`saves\`, one per save slot).
 
-**Antivirus:** one or two scanners may flag the download. That is UE4SS's loader (`dwmapi.dll`), which works by
-loading into the game process - the usual false positive for UE4SS mods. All the mod's own code is the Lua and
-PowerShell in this repo.
+Made for game version 1.0.1.0: after a game update, check for a new version (the menu-entry pak is built from the
+game's own menu table).
 
 ## How it works
 - A [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) Lua mod (`runtime/FFRBestiary`) builds the page inside the game's
   own menu, tracks the enemies you meet in battle, and reads scan status from your save.
-- The menu entry needs two rows in the game's data tables. **No game files are distributed**: the installer extracts
-  those two tables from your own install with [retoc](https://github.com/trumank/retoc), adds the rows with
-  `tools/uasset-json` (built on [UAssetAPI](https://github.com/atenfyr/UAssetAPI)), and packs a small `~mods` pak on
-  your PC. It first runs the game once with a helper mod that writes the property mappings these tools need.
+- The menu entry needs two rows in the game's data tables: `zzz_FFRBestiary_P` is those two tables with the
+  Bestiary rows added (`tools/uasset-json` on [UAssetAPI](https://github.com/atenfyr/UAssetAPI), packed with
+  [retoc](https://github.com/trumank/retoc); see `tools/build_pak.sh`).
 - `data/bestiary_data.*` holds IDs, numbers and string-table keys only; all names and text come from the game at
   runtime, in your game's language.
 
 ## Building from source
 Developer notes are in [docs/NOTES.md](docs/NOTES.md) and the original design in [docs/SPEC.md](docs/SPEC.md).
 The data tools need the game's files extracted locally (`tools/ffr-dump`, a CUE4Parse dumper; a `.usmap` from
-UE4SS) - nothing extracted is committed. `tools/make_release.sh` assembles the release zip.
+UE4SS) - nothing extracted is committed. `tools/build_pak.sh` builds the pak, `tools/make_release.sh` the zip.
 
 ## Credits and licence
 - Mod code: MIT licence ([LICENSE](LICENSE)).
-- Bundled third-party tools (MIT): UE4SS, retoc, UAssetAPI (compiled into `uasset-json`).
+- Uses [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) (MIT, installed separately); the pak is built with retoc and UAssetAPI (MIT).
 - The data tools use [CUE4Parse](https://github.com/FabianFG/CUE4Parse); recon was helped by the open-source
   FFR Vision Studio project.
 

@@ -1,36 +1,50 @@
-FFR Bestiary - a bestiary for FINAL FANTASY RESONANCE (Steam, PC)
-=================================================================
+FFR Bestiary 0.1.1 - a bestiary for FINAL FANTASY RESONANCE (Steam, PC)
+=====================================================================
 
-Adds "Bestiary" to the main menu: every enemy you have met, grouped by area, with the game's own scan (Libra)
-details once you have scanned it, its animated battle sprite, and where it can be found.
+Adds "Bestiary" to the main menu (above System): every enemy you have met, grouped by area, with the game's own
+scan (Libra) details once you have scanned it, its animated battle sprite, and where it can be found.
 
-Install
-  1. Close the game. Double-click Install.bat.
-  2. Start the game from Steam, wait for the title screen, quit.
-  3. Double-click Install.bat again.
-  After a game update, run Install.bat again (it may ask for step 2 once more).
-  Step 3 needs an internet connection the first time (the bundled retoc tool downloads a decompression library).
-  If the game isn't found (not a standard Steam library), run from a command prompt:
-    powershell -ExecutionPolicy Bypass -File install.ps1 -GamePath "<path to the FINAL FANTASY RESONANCE folder>"
-  If you already use UE4SS, it must be 3.0 or newer (the ue4ss\ folder layout); the installer adds the mod to it.
+Made for game version 1.0.1.0.
 
-Uninstall
-  Double-click Uninstall.bat. Your bestiary progress is kept in %LOCALAPPDATA%\FFRS-backups.
 
-How it works
-  - The installer adds UE4SS (unless you already have it) and the Bestiary script mod, and builds a small data pak
-    from your own game files (it adds the menu entry). No game files are included in this download.
-  - Your game saves are never touched. The installer backs them up to %LOCALAPPDATA%\FFRS-backups first anyway.
-  - Bestiary progress is saved next to the mod (ue4ss\Mods\FFRBestiary\saves\slotN.json), one file per save slot,
-    written when the game saves and read when you load. Scanned status comes from the game itself.
+REQUIREMENT: UE4SS (one-time setup)
+  1. Download UE4SS from https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest
+     (the "UE4SS_v3..." zip, not the "zDEV" one).
+  2. Open your game folder: in Steam, right-click FINAL FANTASY RESONANCE > Manage > Browse local files.
+  3. Go into FFRS\Binaries\Win64 (the folder with FFRS-Win64-Shipping.exe) and extract the UE4SS zip there,
+     so that dwmapi.dll and the ue4ss folder sit next to FFRS-Win64-Shipping.exe.
+  4. Open ue4ss\UE4SS-settings.ini in Notepad, find [EngineVersionOverride] and set:
+         MajorVersion = 5
+         MinorVersion = 6
+     Save the file.
+
+INSTALL
+  Extract this zip into your game folder (the FINAL FANTASY RESONANCE folder that contains FFRS). Its FFRS folder
+  merges with the game's and adds:
+    FFRS\Binaries\Win64\ue4ss\Mods\FFRBestiary\     the mod (switched on by the enabled.txt inside it)
+    FFRS\Content\Paks\~mods\zzz_FFRBestiary_P.*      the menu entry
+  Start the game and open the main menu: Bestiary is above System.
+
+UNINSTALL
+  Delete FFRS\Binaries\Win64\ue4ss\Mods\FFRBestiary and the three FFRS\Content\Paks\~mods\zzz_FFRBestiary_P files.
+  (To remove UE4SS too, delete dwmapi.dll and the ue4ss folder in FFRS\Binaries\Win64 - if no other mod uses it.)
+  Your bestiary progress is in ...\Mods\FFRBestiary\saves: copy it somewhere first if you want to keep it.
+
+UPDATING
+  Extract the new version over the old one. Progress (the saves folder) is kept.
+  After a game update, check for a new version of this mod: the menu-entry pak is made for one game version.
+
+GOOD TO KNOW
+  - Your game saves are never written. Bestiary progress is kept in its own files next to the mod, one per save
+    slot, written when the game saves and read when you load. Steam Cloud doesn't sync those files.
   - Installing part-way through the game: the enemies your save already records as defeated or scanned, and the
     areas it marks as visited, are picked up when you load. Where you met those enemies isn't recorded by the game,
     so their locations show ??? until you meet them again.
-  - Steam Cloud syncs your game saves but not the bestiary files: on another PC the bestiary starts again from what
-    your save records (enemies defeated or scanned, areas visited).
+  - Already using UE4SS for other mods? Nothing to set up: just extract this zip.
 
-Controls in the Bestiary
-  Up/Down: move.  Confirm on an area: open/close it.  Confirm on an enemy (or Q/E on a keyboard): next form, for enemies with
-  several forms or phases.
+CONTROLS IN THE BESTIARY
+  Up/Down: move.  Confirm on an area: open/close it.  Confirm on an enemy (or Q/E on a keyboard): next form, for
+  enemies with several forms or phases.
 
-Included third-party tools (MIT licence, see licenses\): UE4SS, retoc, UAssetAPI.
+Source code and bug reports: https://github.com/Law19902/ffr-bestiary (MIT licence)
+FINAL FANTASY RESONANCE is (c) SQUARE ENIX. Unofficial fan mod, not affiliated with or endorsed by Square Enix.

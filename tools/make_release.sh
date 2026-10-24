@@ -1,28 +1,31 @@
 #!/bin/sh
-# Assemble the release folder dist/FFRBestiary from the repo + third-party tools. Nothing from the game goes in.
+# Assemble the release zip: a folder tree to extract into the game folder. Only the mod's own files and the small
+# menu-entry pak built by tools/build_pak.sh - no scripts, no programs, no UE4SS (players install it themselves;
+# Nexus quarantines .bat/.ps1/.exe).
 set -e
 cd "$(dirname "$0")/.."
+VERSION=0.1.1
 D=dist/FFRBestiary
-rm -rf dist && mkdir -p $D/mod/FFRBestiary/Scripts $D/mod/BestiaryMappings/Scripts $D/tools $D/ue4ss $D/licenses
-cp release/install.ps1 release/uninstall.ps1 release/find-game.ps1 release/Install.bat release/Uninstall.bat release/README.txt $D/
-cp runtime/FFRBestiary/Scripts/*.lua data/bestiary_data.lua $D/mod/FFRBestiary/Scripts/
-cp runtime/BestiaryMappings/Scripts/main.lua $D/mod/BestiaryMappings/Scripts/
-# UE4SS: the build tested with this mod (experimental 3.0.1-1181), loader + core only, no sample mods
-U=tools/downloads/ue4ss-zip
-cp $U/dwmapi.dll $D/ue4ss/
-mkdir -p $D/ue4ss/ue4ss/Mods
-cp $U/ue4ss/UE4SS.dll $U/ue4ss/UE4SS-settings.ini $D/ue4ss/ue4ss/
-cp -r $U/ue4ss/UE4SS_SDK_Backends $D/ue4ss/ue4ss/ 2>/dev/null || true
-printf 'Keybinds : 0\n' > $D/ue4ss/ue4ss/Mods/mods.txt
-cp $U/ue4ss/LICENSE $D/licenses/UE4SS-LICENSE.txt
-cp tools/downloads/pipeline/retoc/retoc.exe $D/tools/
-cp tools/downloads/pipeline/retoc/LICENSE $D/licenses/retoc-LICENSE.txt
-cp build/publish/uasset-json/uasset-json.exe $D/tools/
-printf 'UAssetAPI (https://github.com/atenfyr/UAssetAPI), MIT License, is compiled into tools\uasset-json.exe.\n' > $D/licenses/UAssetAPI.txt
-echo "release assembled in $D"; du -sh $D
-# the zip to publish, from the fresh folder (running the installer from dist/ lets retoc download its Oodle DLL into
-# tools/; that is not ours to ship)
-if ls $D/tools | grep -qi oo2core; then echo "ERROR: Oodle DLL in $D/tools" >&2; exit 1; fi
-rm -f dist/FFRBestiary.zip
-powershell -NoProfile -Command "Compress-Archive -Path 'dist/FFRBestiary' -DestinationPath 'dist/FFRBestiary.zip'"
-ls -la dist/FFRBestiary.zip
+M=$D/FFRS/Binaries/Win64/ue4ss/Mods/FFRBestiary
+P=$D/FFRS/Content/Paks/~mods
+rm -rf dist && mkdir -p $M/Scripts "$P"
+cp runtime/FFRBestiary/Scripts/*.lua data/bestiary_data.lua $M/Scripts/
+printf 'UE4SS loads this mod because this file exists.
+' > $M/enabled.txt   # no mods.txt edit needed
+cp release/README.txt $M/README.txt
+cp build/out/zzz_FFRBestiary_P.pak build/out/zzz_FFRBestiary_P.utoc build/out/zzz_FFRBestiary_P.ucas "$P/"
+# nothing executable may slip in
+if find $D -type f | grep -iqE '\.(bat|cmd|ps1|exe|dll|vbs|js)$'; then echo "ERROR: executable file in $D" >&2; exit 1; fi
+rm -f dist/FFRBestiary-$VERSION.zip
+# zip with forward slashes (Windows PowerShell's Compress-Archive writes backslashes, which some tools mishandle)
+python -c "
+import os, sys, zipfile
+root, out = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
+    for d, _, files in os.walk(os.path.join(root, 'FFRS')):
+        for f in sorted(files):
+            full = os.path.join(d, f)
+            z.write(full, os.path.relpath(full, root).replace(os.sep, '/'))
+" $D dist/FFRBestiary-$VERSION.zip
+find $D -type f | sed "s|^$D/||"
+ls -la dist/FFRBestiary-$VERSION.zip

@@ -175,7 +175,7 @@ M.TUTORIAL_LAYOUT = "/Game/UI/Tutorial/WBP_TutorialLayout.WBP_TutorialLayout_C" 
 M.RACE_KEY = { [0] = "None", "Animal", "Avian", "Aquatic", "Demon", "Human", "Machina", "Dragon", "Fairy", "Insect",
                "Stone", "Plantoid", "Reaper", "Chocobo", "Vision", "Beast" }
 
--- the data pak with the menu row (built by the installer's second run; see install.ps1). Without it the mod stays out
+-- the data pak with the menu row (shipped in ~mods; tools/build_pak.sh). Without it the mod stays out
 -- of the menu: the scene list would name a row the menu table doesn't have.
 local MOD_DIR = (debug.getinfo(1, "S").source:gsub("^@", ""):gsub("\\", "/"):match("^(.*)/Scripts/[^/]+$")) or "."
 local pakChecked
@@ -184,7 +184,7 @@ function M.pakInstalled()
         -- Mods/FFRBestiary -> FFRS/Content/Paks/~mods (Mods, ue4ss, Win64, Binaries, FFRS)
         local f = io.open(MOD_DIR .. "/../../../../../Content/Paks/~mods/zzz_FFRBestiary_P.utoc", "rb")
         pakChecked = f ~= nil
-        if f then f:close() else print("[FFRBestiary] data pak not installed: run the installer again\n") end
+        if f then f:close() else print("[FFRBestiary] menu-entry pak not found in FFRS/Content/Paks/~mods: extract the whole mod zip into the game folder\n") end
     end
     return pakChecked
 end
