@@ -24,7 +24,8 @@ battle sprite, and where it can be found.
 - Works with controller and keyboard; uses the game's own fonts, panels and icons
 
 ## Install
-Download `FFRBestiary.zip` from [Releases](../../releases), unzip it anywhere, and follow `README.txt` inside:
+Download from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or [Releases](../../releases)
+(`FFRBestiary.zip`), unzip it anywhere, and follow `README.txt` inside:
 
 1. Close the game. Double-click `Install.bat`.
 2. Start the game from Steam, wait for the title screen, quit.
@@ -35,6 +36,10 @@ Run `Install.bat` again after a game update. `Uninstall.bat` removes everything 
 
 **Your game saves are never written.** The installer backs them up first anyway. Bestiary progress lives in its own
 files next to the mod (one per save slot).
+
+**Antivirus:** one or two scanners may flag the download. That is UE4SS's loader (`dwmapi.dll`), which works by
+loading into the game process - the usual false positive for UE4SS mods. All the mod's own code is the Lua and
+PowerShell in this repo.
 
 ## How it works
 - A [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) Lua mod (`runtime/FFRBestiary`) builds the page inside the game's
