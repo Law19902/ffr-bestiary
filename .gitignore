@@ -1,0 +1,8 @@
+backups/
+extracted/
+bin/
+obj/
+tools/downloads/
+tools/oodle/
+build/
+dist/
