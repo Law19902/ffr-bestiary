@@ -27,7 +27,7 @@ battle sprite, and where it can be found, with the world map on each area's page
 - Works with controller and keyboard; uses the game's own fonts, panels and icons
 
 ## Install
-Download `FFRBestiary-0.1.3.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
+Download `FFRBestiary-0.1.4.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
 [Releases](../../releases). There are no scripts or programs in it: you install [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)
 once yourself, then extract the zip into your game folder.
 

@@ -3,7 +3,6 @@
 -- Text uses the game's own style and heading widget (as on the Quests page); scanned enemies get the Quests check.
 local game = require("game")
 local store = require("store")
-local tracker = require("tracker")
 local data = require("bestiary_data")
 local worldmap = require("worldmap_data")
 
@@ -1143,6 +1142,7 @@ function M.installHooks()
         end)
     end)
     if not ok then log("hook PushLayoutWidget: " .. tostring(err)) end
+    return ok
 end
 
 -- safety net: if the pop-up still opens, hide it and take it off the input stack at once
@@ -1199,8 +1199,9 @@ function M.poll()
             if builtFor ~= addr then forgetCaches(); build(); builtFor = addr end
             hookEntries()                                 -- the entry class is loaded now
             pendingForm, pendingConfirm, pendingRefresh = nil, nil, nil   -- input from before it was open
-            local here = tracker.currentArea()
-            if here then expanded[here] = true end           -- open on the area the player is in
+            -- every area starts closed: opening the player's current area each time undid closing it, and areas
+            -- stayed open from the last visit (RaifRedacted, 25 Oct)
+            for a in pairs(expanded) do expanded[a] = nil end
             refresh(1)
         end)
         if not ok then log("screen: " .. tostring(err)) end

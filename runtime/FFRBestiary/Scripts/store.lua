@@ -10,7 +10,9 @@ local M = {}
 -- is started from Steam, whose working folder is the game root, not Binaries\Win64)
 local MOD_DIR = (debug.getinfo(1, "S").source:gsub("^@", ""):gsub("\\", "/"):match("^(.*)/Scripts/[^/]+$")) or "ue4ss/Mods/FFRBestiary"
 local DIR = MOD_DIR .. "/saves/"
-os.execute('mkdir "' .. DIR:gsub("/", "\\") .. '" 2>nul')
+-- the folder is made on the first save that needs it (M.save), not while the game starts: mkdir runs a console
+-- process, which can take the foreground from the game's window as it opens
+local function makeDir() os.execute('mkdir "' .. DIR:gsub("/", "\\") .. '" 2>nul') end
 
 M.units = {}        -- [unitId] = { seen = true, seenAreas = { [areaKey] = true }, fromSave = true if taken from the save }
 M.visited = {}      -- [areaKey] = true: areas the player has been in (their enemies are listed, unseen ones as ???)
@@ -140,6 +142,7 @@ function M.save(slot, records)
     table.sort(visited)
     local tmp = path(slot) .. ".tmp"
     local f = io.open(tmp, "w")
+    if not f then makeDir(); f = io.open(tmp, "w") end
     if not f then log("cannot write " .. tmp); return end
     f:write(json.encode({ version = 2, slot = slot, units = units, visitedAreas = visited }), "\n"); f:close()
     -- Windows can't rename over a file: move the old one aside first, so a failed rename loses nothing

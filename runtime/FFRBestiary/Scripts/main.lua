@@ -37,15 +37,17 @@ local function loading()
     return not ok or showing == true
 end
 
-ui.installHooks()
-
 -- one timer for everything: the screen every 50 ms, the rest every second
-local ticks, wasLoading = 0, nil
+local ticks, wasLoading, hooked, hookTries = 0, nil, false, 0
 local function tick()
     local l = loading()
     if DEV and l ~= wasLoading then log("loading " .. tostring(l)) end
     wasLoading = l
     if l then return end
+    -- The game function hook goes in here, on the game thread once the game is up, not when the mod starts: hooked
+    -- from UE4SS's thread during start-up, all input was dead at the title on 4 of 10 launches (a player-style install,
+    -- 25 Oct). The game pushes its title and menu screens through that function.
+    if not hooked and hookTries < 5 then hookTries = hookTries + 1; hooked = ui.installHooks() end
     ui.pollKeys()
     ticks = ticks + 1
     local t0 = os.clock()                                 -- wall time on Windows (MSVC clock)

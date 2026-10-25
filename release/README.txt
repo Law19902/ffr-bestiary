@@ -1,4 +1,4 @@
-FFR Bestiary 0.1.3 - a bestiary for FINAL FANTASY RESONANCE (Steam, PC)
+FFR Bestiary 0.1.4 - a bestiary for FINAL FANTASY RESONANCE (Steam, PC)
 =====================================================================
 
 Adds "Bestiary" to the main menu (above System): every enemy you have met, grouped by area, with the game's own

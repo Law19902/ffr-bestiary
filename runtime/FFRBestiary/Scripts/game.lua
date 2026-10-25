@@ -190,6 +190,28 @@ function M.pakInstalled()
     return pakChecked
 end
 
+-- Whether the menu table the game loaded has the pak's Bestiary row (nil: the menu subsystem isn't up yet). Another
+-- mod's pak that replaces DT_MainMenuScene and loads after ours drops the row; the entry then showed as a dead "???"
+-- (reproduced 25 Oct with the game's own table in a second pak).
+local rowMissingLogged, rowSub
+local function sceneRowLoaded()
+    if not valid(rowSub) then rowSub = FindFirstOf("CPP_MainMenuSubsystem") end   -- one per world
+    if not valid(rowSub) then return nil end
+    local found, rows = false, 0
+    local ok = pcall(function()
+        rowSub.SceneDataMap:ForEach(function(k)
+            rows = rows + 1
+            if k:get().TagName:ToString() == M.SCENE_TAG then found = true end
+        end)
+    end)
+    if not ok or rows == 0 then return nil end           -- the table isn't filled in yet
+    if not found and not rowMissingLogged then
+        rowMissingLogged = true
+        print("[FFRBestiary] the main menu table has no Bestiary row: another mod's pak replaces DT_MainMenuScene; no menu entry\n")
+    end
+    return found
+end
+
 -- Put the Bestiary entry into the main menu, before System. The menu reads DA_MainMenuRoot.DisplaySceneList each time
 -- it opens, so this only needs doing once per load of that asset.
 function M.addMenuEntry()
@@ -202,6 +224,7 @@ function M.addMenuEntry()
     for i = 1, n do
         if list[i].TagName:ToString() == M.SCENE_TAG then return true end
     end
+    if not sceneRowLoaded() then return false end
     local last = list[n].TagName:ToString()
     if last == "UI.MainMenu.Scene.System" then
         list[n + 1] = { TagName = FName(last) }
