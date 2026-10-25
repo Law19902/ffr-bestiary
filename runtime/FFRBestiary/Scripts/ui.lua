@@ -418,18 +418,15 @@ local function knownAreasOf(e)
     return out
 end
 
--- areas the list files entry `e` under: the known ones. A save-known entry with none of its areas visited (met in a
--- story event the save doesn't mark as a visit) goes under its own areas: the player has fought it, and a nameless
--- "-" group of them puzzled players (25 Oct).
+-- areas the list files entry `e` under: the known ones. A save-known entry with none of its areas visited (fought in
+-- a story event the save doesn't mark as a visit) goes under "Other": listing it under its data areas named places
+-- the player had never been (Arcane Library, 25 Oct).
 local function groupAreasOf(e)
     local out = knownAreasOf(e)
     if next(out) == nil then
         for _, u in ipairs(e.units) do
             local s = store.units[u]
-            if s and s.fromSave then
-                for _, a in ipairs(e.areas) do out[a] = true end
-                if #e.areas == 0 then out["?"] = true end
-            end
+            if s and s.fromSave then out["?"] = true end
         end
     end
     return out

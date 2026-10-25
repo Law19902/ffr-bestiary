@@ -64,12 +64,13 @@ function M.seedFromSave(sd, records)
     log("from the game save: " .. n .. " enemies, " .. v .. " visited areas")
 end
 
--- Story-event stages (maps 5000-5999: cutscene sets such as the Research Center scene) don't count as having been
--- to their area: the save marks them visited, and Gronoa showed up for a player who had never been there (25 Oct).
--- Enemies met in them still file the area.
+-- Story-event stages don't count as having been to their area: the save marks them visited, and Gronoa, Research
+-- Center Ruins and the Battlefield showed up for a player who had never been there (25 Oct). They are the cutscene
+-- sets (maps 5000-5999) and the Battlefield, a shared stage for story battles. Enemies met in them still file it.
+local BATTLEFIELD = "name:MAP_NAME_060"
 function M.isEventStage(map)
     map = tonumber(map)
-    return map ~= nil and map >= 5000 and map < 6000
+    return map ~= nil and ((map >= 5000 and map < 6000) or data.mapArea[tostring(map)] == BATTLEFIELD)
 end
 
 function M.markVisited(area)
