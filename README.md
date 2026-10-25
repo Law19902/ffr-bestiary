@@ -4,8 +4,8 @@ A bestiary for **FINAL FANTASY RESONANCE** (Steam, PC). It adds a **Bestiary** p
 you have met, grouped by area, with the game's own scan (Libra) details once you have scanned it, its animated
 battle sprite, and where it can be found, with the world map on each area's page.
 
-> First release, made for community feedback - expect rough edges. Bug reports and suggestions are very welcome in
-> [Issues](../../issues).
+> Bug reports and suggestions are very welcome in [Issues](../../issues) or on the
+> [Nexus page](https://www.nexusmods.com/finalfantasyresonance/mods/88).
 
 ![Area list](docs/screenshots/1_areas.png)
 ![An enemy page](docs/screenshots/2_goblin.png)
@@ -23,7 +23,9 @@ battle sprite, and where it can be found, with the world map on each area's page
 - Installing part-way through the game picks up what your save already records (enemies defeated or scanned, areas
   visited, and so where you met them)
 - Enemies only fought before you have Libra (the prologue's, Belmodar) count as scanned once met
-- The menu entry is named in the game's language
+- Follows the game's language: the menu entry (Japanese, German, French, Spanish, Korean, Chinese), enemy and place
+  names and the scan details. A few labels the game has no text for (Encountered / Scanned, Locations, Next form)
+  stay in English
 - Works with controller and keyboard; uses the game's own fonts, panels and icons
 
 ## Install
@@ -42,11 +44,21 @@ once yourself, then extract the zip into your game folder.
 `FFRS\Binaries\Win64\ue4ss\Mods\FFRBestiary` (enabled by the `enabled.txt` inside it) and
 `FFRS\Content\Paks\~mods\zzz_FFRBestiary_P.*` (the menu entry). Bestiary appears in the main menu above System.
 
+**Updating:** extract the new version over the old one; your Bestiary progress is kept.
+
 **Uninstall:** delete those two. **Your game saves are never written**; Bestiary progress lives in its own files in
 the mod folder (`saves\`, one per save slot).
 
 Made for game version 1.0.1.0: after a game update, check for a new version (the menu-entry pak is built from the
 game's own menu table).
+
+## Troubleshooting
+- **Controls dead at the title or main menu** (keyboard and controller): update to 0.1.4 or later, where this is fixed.
+- **No Bestiary entry in the menu:** another mod's pak replaces the game's main-menu table, so the entry is left out
+  (`UE4SS.log` says so). Tell me which mod in [Issues](../../issues).
+- **Sending a log:** `FFRS\Binaries\Win64\ue4ss\UE4SS.log` is rewritten each time the game starts, so grab it right
+  after the problem. Attach it to an issue, paste it on pastebin.com, or share it from Google Drive with "Anyone with
+  the link".
 
 ## How it works
 - A [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) Lua mod (`runtime/FFRBestiary`) builds the page inside the game's
