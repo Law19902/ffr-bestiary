@@ -4,7 +4,7 @@
 # Nexus quarantines .bat/.ps1/.exe).
 set -e
 cd "$(dirname "$0")/.."
-VERSION=0.1.2
+VERSION=0.1.3
 D=dist/FFRBestiary
 M=$D/FFRS/Binaries/Win64/ue4ss/Mods/FFRBestiary
 P=$D/FFRS/Content/Paks/~mods

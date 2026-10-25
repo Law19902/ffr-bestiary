@@ -32,7 +32,10 @@ lists every field's style and whether it needs a scan (`bIsDisplayRequiresAnalys
   (scan data now comes from the mod's data file); two timers running into each other in UE4SS's Lua state (one
   timer now). Stress test (all 408 entries, every area opened) passes.
 - Installing mid-game: enemies the save records as defeated / scanned and maps it marks visited
-  (`Map.perMapSaveDataMap.bIsVisited`) are picked up on load; their locations stay ??? until met again.
+  (`Map.perMapSaveDataMap.bIsVisited`) are picked up on load; they're listed under their data areas the player
+  has visited. The save has no `perMapSaveDataMap` entry at all for some maps (Grandshelt Castle 2012/2014/3020,
+  Old Town Olderion), so since 0.1.3 a save-known enemy whose data gives one place only marks that place visited,
+  unless a story stage (5000-5999, stageArea) can stand for it (25 Oct; checked in game on slot 0).
 - Sprites: `tools/sprite_measure.py` measures every sprite as the game draws it (dev measure mode: F9 magenta box,
   F8 steps entries; captures by a walk script); whole screen pixels per sprite pixel from 2x up.
 - Dev copy only: the `BestiaryProbe` dev mod also binds F8 (it adds test menu entries; 124 presses crashed the

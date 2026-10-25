@@ -17,6 +17,9 @@ M.visited = {}      -- [areaKey] = true: areas the player has been in (their ene
 M.slot = nil        -- slot the progress belongs to (nil for an unsaved new game)
 M.dirty = false
 
+local BATTLEFIELD = "name:MAP_NAME_060"   -- shared stage for story battles (see isEventStage)
+local stagePlaces                          -- [areaKey] = true: places a story stage can stand for (seedFromSave)
+
 local function log(s) print("[FFRBestiary] " .. s .. "\n") end
 local function path(slot) return DIR .. "slot" .. slot .. ".json" end
 
@@ -60,6 +63,28 @@ function M.seedFromSave(sd, records)
         end)
     end)
     if not ok then log("visited maps: " .. tostring(err)) end
+    -- The save keeps no entry at all for some maps (Grandshelt Castle, Old Town Olderion: 25 Oct), so their enemies
+    -- fell under "Other". An enemy the save knows that the game data puts in one place only was met there, so that
+    -- place counts as visited. Not a place a story stage can stand for (maps 5000-5999, stageArea): a story battle
+    -- filed under it may have been fought elsewhere, and the list would name a place not reached yet.
+    if not stagePlaces then
+        stagePlaces = {}
+        for map, a in pairs(data.mapArea) do if M.isEventStage(map) then stagePlaces[a] = true end end
+        for _, from in pairs(data.stageArea) do for _, a in ipairs(from) do stagePlaces[a] = true end end
+    end
+    for _, e in ipairs(data.entries) do
+        local a = #e.areas == 1 and e.areas[1]
+        if a and not stagePlaces[a] and not M.visited[a] then
+            for _, u in ipairs(e.units) do
+                local s = M.units[u]
+                if s and s.fromSave then
+                    visit(a)
+                    if data.areaRegion[a] then visit(data.islandArea[tostring(data.areaRegion[a])]) end
+                    break
+                end
+            end
+        end
+    end
     if n + v > 0 then M.dirty = true end
     log("from the game save: " .. n .. " enemies, " .. v .. " visited areas")
 end
@@ -67,7 +92,6 @@ end
 -- Story-event stages don't count as having been to their area: the save marks them visited, and Gronoa, Research
 -- Center Ruins and the Battlefield showed up for a player who had never been there (25 Oct). They are the cutscene
 -- sets (maps 5000-5999) and the Battlefield, a shared stage for story battles. Enemies met in them still file it.
-local BATTLEFIELD = "name:MAP_NAME_060"
 function M.isEventStage(map)
     map = tonumber(map)
     return map ~= nil and ((map >= 5000 and map < 6000) or data.mapArea[tostring(map)] == BATTLEFIELD)

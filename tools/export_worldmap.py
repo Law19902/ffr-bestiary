@@ -41,6 +41,11 @@ for key, a in src['areas'].items():
     e = {'u': a['u'], 'v': a['v']}
     if key.startswith('island:') and a.get('rectUV'): e['rect'] = a['rectUV']
     areas[key] = e
+# Kingdom of Grandshelt spans three islands (Grandshelt, Grandport, Kolobos): the mean of its places fell on the
+# bridge between Grandshelt and Grandport, which reads as the sea (25 Oct). Its marker goes on its capital instead.
+CAPITAL = {'island:MAP_NAME_001': 'name:MAP_NAME_012'}   # Grandshelt, the Royal Capital
+for key, cap in CAPITAL.items():
+    areas[key]['u'], areas[key]['v'] = areas[cap]['u'], areas[cap]['v']
 # an island's position only for places that are on that island (the Zoldaad railway); not for the airship (no fixed
 # place: it showed a marker in the sea) or Fina's Psyche (a dream)
 ON_ISLAND = {'name:MAP_NAME_042', 'name:MAP_NAME_082'}   # Timber Tracks, Phantom Train

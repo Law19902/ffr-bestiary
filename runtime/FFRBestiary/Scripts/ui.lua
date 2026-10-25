@@ -34,7 +34,8 @@ local AREAS_H = TOP_H - SPRITE - 76 -- locations list under the sprite (heading 
 local MAP_H = 536                  -- world map under an area's counts, the panel's full width
 local MAP_INSET = 12               -- clear of the info frame's border, each side
 local MAP_WORLD_FILL = 0.8         -- the world's height in it (the game's map screen leaves sea all round)
-local MAP_MARKER = 64              -- the selected area's marker on it
+local MAP_MARKER = 36              -- the selected area's marker on it (at 64 it reached the next island: Siren's
+                                   -- Tower's looked like it was on Dirnado, 25 Oct)
 local MAP_MARKER_TEX = "/Game/UI/Textures/menu/T_WldMapCursor_Focus.T_WldMapCursor_Focus"   -- the world map's cursor
 -- the game's map screen (WBP_WldMapBG / WBP_WldMapLayout): its sea, vignette and frame
 local MAP_LAYERS = { { tex = "/Game/UI/Textures/MapCapture/Wld/T_Wld_ocean.T_Wld_ocean", z = -20 },
