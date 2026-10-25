@@ -2,7 +2,7 @@
 
 Reads extracted/locations.json (tools/build_locations.py) and the dumped tables.
 Writes data/bestiary_data.json:
-  entries     one per in-game enemy name (design choice: fold units sharing a name). units[0] is the entry's main
+  entries     one per in-game enemy name (Lyndon, 24 Oct: fold units sharing a name). units[0] is the entry's main
               unit (lowest SortId); areas are area keys. An entry is listed only if some unit in it has an area.
   areas       area key -> {table, key} of its display name (resolved by the game at runtime)
   mapArea     map id -> area key, for recording where a battle happened (CurrentMapId)
@@ -12,6 +12,7 @@ Writes data/bestiary_data.json:
   areaRegion  area key -> region (island number); an island counts as visited once any area of its region is
   stats       unit id -> scan data: name / traits as [string table, key], lv, hp, race, el {element: resistance},
               st {status: resistance}, drop [normal, rare, steal, rare steal] (enum numbers from the class dump)
+  spriteTex   unit id -> colour texture path, for an enemy drawn with another enemy's animation in its own colours
   spriteBox   sprite path -> [x0, x1, y0, y1]: outline in sprite pixels from the canvas centre, y down, measured
   faces       unit id -> face icon texture path (battle timeline icon, by FaceIconId)
   spriteSize  sprite path -> {w, h, cy}: rough idle-pose size and body centre (tools/sprite_bounds.py), for scaling
@@ -73,6 +74,17 @@ sprite_rows = g['rows'](g['DT'] + '/Asset/Battle/Unit/DT_BtlUnitAsset.json')
 sprite_of = {v['ID']: v['animationAssetList'][0]['Ss6Project']['AssetPathName']
              for v in sprite_rows.values() if v.get('animationAssetList')}
 sprites = {str(u): sprite_of[u] for e in entries for u in e['units'] if u in sprite_of}
+# A recoloured enemy (Goblin Guard on the Goblin's animation, Metal Cactuar on the Cactuar's) plays another enemy's
+# animation with its own colour texture: textureBaseColor, when it isn't the animation's own (RaifRedacted, 25 Oct:
+# Metal Minituar showed the green Minituar).
+def own_texture(v):
+    a = v['animationAssetList'][0]
+    tex = (a.get('textureBaseColor') or {}).get('AssetPathName') or ''
+    anim = a['Ss6Project']['AssetPathName'].rsplit('/', 1)[-1].split('.')[0]          # monster039
+    if not tex or tex == 'None' or tex.rsplit('/', 1)[-1].split('.')[0].startswith(anim): return None
+    return tex
+tex_of = {v['ID']: own_texture(v) for v in sprite_rows.values() if v.get('animationAssetList')}
+sprite_tex = {str(u): tex_of[u] for e in entries for u in e['units'] if tex_of.get(u)}
 # each listed unit's scan data (DT_UnitParameter) as numbers and string-table keys: the mod reads these instead of
 # asking the game (UE4SS's copy of GetUnitParameterById's struct points into freed memory once the call returns)
 def enum_values(name):
@@ -114,6 +126,7 @@ out = {
     'gameBuild': 24250053,
     'enemyHpRate': hp_rate,
     'sprites': sprites,
+    'spriteTex': sprite_tex,
     'spriteSize': sprite_size,
     'spriteBox': sprite_box,
     'faces': faces,

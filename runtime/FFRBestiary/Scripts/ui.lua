@@ -530,10 +530,12 @@ local function setSprite(id)
             ui.sprite:SetRenderTransformPivot({ X = 0.5, Y = 0.5 })
         end
         local path = id and data.sprites[tostring(id)]
+        local tex = id and data.spriteTex and data.spriteTex[tostring(id)]   -- a recolour's own colours (see below)
         local project = path and game.load(path)
         ui.sprite:SetVisibility(project and 4 or 1)          -- SelfHitTestInvisible / Collapsed
-        if not project or (ui.spriteFor == path and not M.measure) then return end
-        ui.spriteFor = path
+        local key = path and (path .. "|" .. (tex or ""))
+        if not project or (ui.spriteFor == key and not M.measure) then return end
+        ui.spriteFor = key
         -- The widget draws the animation's canvas fitted into the box (k box pixels per sprite pixel), centred.
         -- Scale it so the enemy fills the box (whole screen pixels per sprite pixel, so it stays sharp), and move the
         -- enemy's centre to the box centre. The enemy's outline comes from measuring it as the game draws it
@@ -563,6 +565,19 @@ local function setSprite(id)
         ui.sprite:SetRenderScale({ X = sx, Y = sy })
         ui.sprite:SetRenderTranslation({ X = tx, Y = ty })
         ui.sprite:SetSsProject(project)
+        -- A recoloured enemy (Metal Cactuar, Goblin Guard, ...) plays another enemy's animation; battle draws it with
+        -- its own colour texture (DT_BtlUnitAsset textureBaseColor), so swap that in for the animation's sheet.
+        pcall(function() ui.sprite:RemoveCellmapTextureReplacementAll() end)
+        if tex then
+            local t = game.load(tex)
+            -- keyed by the cell map's CellMapName ("monster005"); the project's CellmapNames ("monster005.ssce")
+            -- are accepted but change nothing (tested 25 Oct)
+            local ok, err = t and pcall(function()
+                local list = project.CellmapList
+                for i = 1, #list do ui.sprite:AddCellmapTextureReplacement(list[i].CellMapName, t) end
+            end)
+            if t and not ok then log("recolour " .. tostring(id) .. ": " .. tostring(err)) end
+        end
         ui.sprite:SetAutoUpdate(true)
         local names, idle = {}, nil
         pcall(function() ui.sprite:GetAnimationNameList(names) end)
