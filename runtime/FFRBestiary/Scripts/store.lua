@@ -52,7 +52,7 @@ function M.seedFromSave(sd, records)
     if not any then return end
     local ok, err = pcall(function()
         sd.Map.perMapSaveDataMap:ForEach(function(key, value)
-            if value:get().bIsVisited then
+            if value:get().bIsVisited and not M.isEventStage(key:get()) then
                 local a = data.mapArea[tostring(key:get())]
                 visit(a)
                 if a and data.areaRegion[a] then visit(data.islandArea[tostring(data.areaRegion[a])]) end
@@ -62,6 +62,14 @@ function M.seedFromSave(sd, records)
     if not ok then log("visited maps: " .. tostring(err)) end
     if n + v > 0 then M.dirty = true end
     log("from the game save: " .. n .. " enemies, " .. v .. " visited areas")
+end
+
+-- Story-event stages (maps 5000-5999: cutscene sets such as the Research Center scene) don't count as having been
+-- to their area: the save marks them visited, and Gronoa showed up for a player who had never been there (25 Oct).
+-- Enemies met in them still file the area.
+function M.isEventStage(map)
+    map = tonumber(map)
+    return map ~= nil and map >= 5000 and map < 6000
 end
 
 function M.markVisited(area)
@@ -85,7 +93,10 @@ function M.load(slot)
         M.units[tonumber(id)] = { seen = u.seen ~= false, seenAreas = areas, fromSave = u.fromSave == true }
         n = n + 1
     end
-    for _, a in ipairs(data.visitedAreas or {}) do M.visited[a] = true end
+    -- version 1 files counted event stages as visits: their list is rebuilt from the save (seedFromSave) instead
+    if (data.version or 1) >= 2 then
+        for _, a in ipairs(data.visitedAreas or {}) do M.visited[a] = true end
+    end
     log("slot " .. slot .. ": loaded " .. n .. " units")
 end
 
@@ -105,7 +116,7 @@ function M.save(slot, records)
     local tmp = path(slot) .. ".tmp"
     local f = io.open(tmp, "w")
     if not f then log("cannot write " .. tmp); return end
-    f:write(json.encode({ version = 1, slot = slot, units = units, visitedAreas = visited }), "\n"); f:close()
+    f:write(json.encode({ version = 2, slot = slot, units = units, visitedAreas = visited }), "\n"); f:close()
     -- Windows can't rename over a file: move the old one aside first, so a failed rename loses nothing
     local file, bak = path(slot), path(slot) .. ".bak"
     os.remove(bak); os.rename(file, bak)

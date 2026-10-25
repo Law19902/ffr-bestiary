@@ -163,6 +163,7 @@ end
 M.TEXT_STYLE = "/Game/UI/Common/Text/TextStyle/SystemText/BP_SystemTextStyle"   -- body text on the Quests page
 M.SUBHEAD = "/Game/UI/Common/Layout/Subhead/WBP_SystemSubhead"                  -- "Goal" / "Summary" headings
 M.WINDOW = "/Game/UI/Common/Window/WBP_Cmn_Window"                               -- framed section (Equipment page)
+M.LEFT_LINE = "/Game/UI/Common/Button/LeftLine/Widget/WBP_LeftLineButton"          -- framed row (Equipment page items)
 M.KEY_ICON = "/Game/UI/Common/KeyIcon/WBP_KeyIcon"                                   -- SetInputAction: device's glyph
 M.DECIDE_ACTION = "/Game/Input/UI/Common/InputAction/IA_UI_Common_Decide.IA_UI_Common_Decide"
 M.CHECK_ICON = "/Game/UI/Textures/Icon/menu/ICON_Quest_Check.ICON_Quest_Check"   -- completed-quest check
@@ -209,6 +210,33 @@ function M.addMenuEntry()
         list[n + 1] = { TagName = FName(M.SCENE_TAG) }
     end
     return true
+end
+
+-- The menu entry's name and page title in the game's language. The pak's row can only hold one fixed text (the game
+-- has no "Bestiary" string of its own), so the main menu's copy of the row (CPP_MainMenuSubsystem.SceneDataMap) gets
+-- the usual name for a bestiary in the language the game is set to (souha0624 asked for Japanese, 25 Oct).
+-- ELanguage: Ja 0, En 1, De 2, Fr 3, Es 4, Ko 5, Zh_hant 6, Zh_hans 7.
+local MENU_NAMES = { [0] = "モンスター図鑑", [2] = "Bestiarium", [3] = "Bestiaire", [4] = "Bestiario",
+                     [5] = "몬스터 도감", [6] = "魔物圖鑑", [7] = "魔物图鉴" }
+local menuSub, namedFor
+function M.localizeMenuEntry()
+    if not valid(menuSub) then menuSub = FindFirstOf("CPP_MainMenuSubsystem") end   -- one per world
+    if not valid(menuSub) then return end
+    local ok, lang = pcall(function() return StaticFindObject("/Script/mucha.Default__CPP_BFL_Localize"):GetLanguage() end)
+    if not ok or lang == nil then return end
+    local key = menuSub:GetFullName() .. "#" .. tostring(lang)
+    if namedFor == key then return end                    -- once per subsystem and language
+    namedFor = key
+    local name = MENU_NAMES[tonumber(lang)]
+    if not name then return end                           -- English (and anything else): the pak's "Bestiary"
+    menuSub.SceneDataMap:ForEach(function(k, v)
+        if k:get().TagName:ToString() == M.SCENE_TAG then
+            local d = v:get()
+            d.EntryName = FText(name)
+            d.SceneTitle = FText(name)
+        end
+    end)
+    print("[FFRBestiary] menu name for language " .. tostring(lang) .. "\n")
 end
 
 -- the open Bestiary screen (the host layout under the main menu, activated), or nil. The menu pools the widget, so

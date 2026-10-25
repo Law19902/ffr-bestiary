@@ -1,8 +1,9 @@
-FFR Bestiary 0.1.1 - a bestiary for FINAL FANTASY RESONANCE (Steam, PC)
+FFR Bestiary 0.1.2 - a bestiary for FINAL FANTASY RESONANCE (Steam, PC)
 =====================================================================
 
 Adds "Bestiary" to the main menu (above System): every enemy you have met, grouped by area, with the game's own
-scan (Libra) details once you have scanned it, its animated battle sprite, and where it can be found.
+scan (Libra) details once you have scanned it, its animated battle sprite, and where it can be found - with the
+world map on each area's page.
 
 Made for game version 1.0.1.0.
 
@@ -38,8 +39,9 @@ GOOD TO KNOW
   - Your game saves are never written. Bestiary progress is kept in its own files next to the mod, one per save
     slot, written when the game saves and read when you load. Steam Cloud doesn't sync those files.
   - Installing part-way through the game: the enemies your save already records as defeated or scanned, and the
-    areas it marks as visited, are picked up when you load. Where you met those enemies isn't recorded by the game,
-    so their locations show ??? until you meet them again.
+    areas it marks as visited, are picked up when you load (with their locations in the areas you have visited).
+  - Enemies you can only fight before you have Libra (the prologue's, Belmodar) count as scanned once met.
+  - The menu entry is named in the game's language (Japanese, German, French, Spanish, Korean, Chinese).
   - Already using UE4SS for other mods? Nothing to set up: just extract this zip.
 
 CONTROLS IN THE BESTIARY

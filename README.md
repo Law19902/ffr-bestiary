@@ -2,7 +2,7 @@
 
 A bestiary for **FINAL FANTASY RESONANCE** (Steam, PC). It adds a **Bestiary** page to the main menu: every enemy
 you have met, grouped by area, with the game's own scan (Libra) details once you have scanned it, its animated
-battle sprite, and where it can be found.
+battle sprite, and where it can be found, with the world map on each area's page.
 
 > First release, made for community feedback - expect rough edges. Bug reports and suggestions are very welcome in
 > [Issues](../../issues).
@@ -18,13 +18,16 @@ battle sprite, and where it can be found.
   what the battle screen has already shown you)
 - Animated battle sprites and the battle timeline's face icons
 - Encounter locations: places you have met the enemy are named, the rest show `???`
+- Each area's page shows the world map, drawn like the game's own map screen, with the area marked
 - Enemies with several forms or phases: confirm on the enemy steps through them
 - Installing part-way through the game picks up what your save already records (enemies defeated or scanned, areas
-  visited)
+  visited, and so where you met them)
+- Enemies only fought before you have Libra (the prologue's, Belmodar) count as scanned once met
+- The menu entry is named in the game's language
 - Works with controller and keyboard; uses the game's own fonts, panels and icons
 
 ## Install
-Download `FFRBestiary-0.1.1.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
+Download `FFRBestiary-0.1.2.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
 [Releases](../../releases). There are no scripts or programs in it: you install [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)
 once yourself, then extract the zip into your game folder.
 

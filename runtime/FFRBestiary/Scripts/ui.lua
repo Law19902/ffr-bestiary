@@ -5,6 +5,7 @@ local game = require("game")
 local store = require("store")
 local tracker = require("tracker")
 local data = require("bestiary_data")
+local worldmap = require("worldmap_data")
 
 local M = {}
 M.showAll = false                  -- DEVELOPMENT: treat every enemy as seen everywhere (F7 toggles)
@@ -15,18 +16,30 @@ local function log(s) print("[FFRBestiary] " .. s .. "\n") end
 -- layout, in the UI's 1920x1080 design units
 local WINDOW_W, WINDOW_H = 1760, 830
 local LIST_W, LIST_H = 640, 670     -- wide enough for "Dirnado, the Continent of Wind" plus its counts
-local DETAIL_W = 950
+local DETAIL_W = 918                -- inside the info frame (its padding takes 2 x PANEL_PAD of the window's room)
+local DETAIL_H = LIST_H + 76       -- the detail panel's room (down to just above the window's bottom edge)
 local COLUMN_GAP = 30
 local SPRITE = 320
 local SPRITE_FILL = 0.9            -- the enemy fills this much of the sprite box (its larger side)...
 local SPRITE_FILL_MEASURED = 0.97  -- ...nearly all of it when its outline was measured (exact)
 local MEASURE_SCALE = 0.5          -- dev measure mode: canvas drawn at half its fitted size, so nothing is clipped
 local SPRITE_MAX_PX = 3.0          -- ...but small ones are drawn no bigger than 3 screen pixels per sprite pixel
-local LABEL_W = 230
+local LABEL_W = 180
 local DROP_LABEL_W = 190           -- "Items Dropped" / "Stealable Items" (left room for "Lightning Scroll I" etc.)
 local PANEL_PAD = 16               -- inside a framed panel (the game's WBP_Cmn_Window), each side
-local VALUE_W = DETAIL_W - SPRITE - 24 - LABEL_W - 10 - 2 * PANEL_PAD   -- detail width - sprite - gap - label - panel
-local AREAS_H = 110                -- locations list height; scrolls beyond that
+local VALUE_W = DETAIL_W - SPRITE - 24 - LABEL_W - 10 - 2 * PANEL_PAD - 2 * 12 - 8   -- detail - sprite - gap - label - panel - row frame
+local TOP_H = 521                  -- sprite + locations | stats: a fixed height, so the panel never changes size
+local AREA_SCALE = 0.78           -- locations text, relative to the panel's
+local AREAS_H = TOP_H - SPRITE - 76 -- locations list under the sprite (heading and frame take the rest); scrolls
+local MAP_H = 536                  -- world map under an area's counts, the panel's full width
+local MAP_INSET = 12               -- clear of the info frame's border, each side
+local MAP_WORLD_FILL = 0.8         -- the world's height in it (the game's map screen leaves sea all round)
+local MAP_MARKER = 64              -- the selected area's marker on it
+local MAP_MARKER_TEX = "/Game/UI/Textures/menu/T_WldMapCursor_Focus.T_WldMapCursor_Focus"   -- the world map's cursor
+-- the game's map screen (WBP_WldMapBG / WBP_WldMapLayout): its sea, vignette and frame
+local MAP_LAYERS = { { tex = "/Game/UI/Textures/MapCapture/Wld/T_Wld_ocean.T_Wld_ocean", z = -20 },
+                     { tex = "/Game/UI/Textures/Menu/T_Menu_Map_Vignette.T_Menu_Map_Vignette", z = 50 },
+                     { tex = "/Game/UI/Textures/MapCapture/Wld/T_Wld_frame.T_Wld_frame", z = 60 } }
 -- affinity groups shown in the scan panel (DA_BtlLibra styles Weak/Halved/Invalid/Absorb), eResistance values
 -- (labels: the scan panel's own keys have no text, so the battle's damage words: Weak / Resisted / Immune / Absorbed)
 local RESIST_ROWS = { { key = "UIBtlProp_Weakness", value = 1 }, { key = "UIBtlProp_Halved", value = 2 },
@@ -40,6 +53,7 @@ local GREY = { R = 0.55, G = 0.58, B = 0.63, A = 1.0 }
 local DIM = { R = 0.42, G = 0.44, B = 0.48, A = 1.0 }
 local WHITE = { R = 1.0, G = 1.0, B = 1.0, A = 1.0 }
 local UNKNOWN = "???"
+local OTHER_PLACES = "Other"          -- list group for enemies met where no place name could be found
 local ENCOUNTERED, SCANNED = "Encountered", "Scanned"   -- the game has no strings for these
 
 -- widget helpers --------------------------------------------------------------------------------------------------
@@ -60,7 +74,7 @@ end
 local function find(w, name) return walk(w, function(x) return x:GetFName():ToString() == name end) end
 
 local host, ui                     -- open host widget, and the widgets built into it
-local create, widgetRow, panel, viewportScale, faceTexture
+local create, widgetRow, panel, viewportScale, faceTexture, placeOnMap, loadQueuedTile
 local styleClass, subheadClass, checkTex
 
 local function new(kind, outer)
@@ -121,14 +135,36 @@ panel = function(content)
 end
 
 -- "Label    value" row; returns the value text
+-- `content` in the game's framed row (WBP_LeftLineButton, the bar behind each item / ability on the Equipment page),
+-- for display only: not focusable or clickable. Grows past its usual 40 px for two-line text.
+local FRAME_PAD = 12               -- content inset inside the bar, each side
+local function framed(content)
+    local b = create(game.LEFT_LINE)
+    if not b then return content end
+    local ok = pcall(function()
+        local root = b.WidgetTree.RootWidget
+        local slot = find(root, "Overlay_Content") or find(root, "Overlay_0")
+        local s = slot:AddChildToOverlay(content)
+        s:SetVerticalAlignment(2); s:SetHorizontalAlignment(0)
+        s:SetPadding({ Left = FRAME_PAD, Top = 4, Right = FRAME_PAD, Bottom = 4 })
+        local box = find(root, "SizeBox_0")
+        if box then box:ClearHeightOverride(); box:SetMinDesiredHeight(40) end
+    end)
+    if not ok then return content end
+    pcall(function() b:SetIsFocusable(false) end)
+    b:SetVisibility(3)                                    -- HitTestInvisible: the controller and mouse pass it by
+    return b
+end
+
 local function row(parent, key, valueW)
     local line = new("HorizontalBox")
     line:AddChildToHorizontalBox(sized(text(game.libra(key) or key, GREY), LABEL_W, nil))
     local v = text("")
     pcall(function() v:SetAutoWrapText(true) end)
     line:AddChildToHorizontalBox(sized(v, valueW or VALUE_W, nil))
-    parent:AddChildToVerticalBox(line):SetPadding({ Left = 0, Top = 3, Right = 0, Bottom = 3 })
-    return v
+    local f = framed(line)
+    parent:AddChildToVerticalBox(f):SetPadding({ Left = 0, Top = 2, Right = 0, Bottom = 2 })
+    return v, f
 end
 
 -- a game widget (WBP class path) for this screen
@@ -147,7 +183,7 @@ widgetRow = function(parent, key, labelW)
     line:AddChildToHorizontalBox(v):SetVerticalAlignment(2)
     local box = new("HorizontalBox")
     line:AddChildToHorizontalBox(box):SetVerticalAlignment(2)
-    parent:AddChildToVerticalBox(line):SetPadding({ Left = 0, Top = 3, Right = 0, Bottom = 3 })
+    parent:AddChildToVerticalBox(framed(line)):SetPadding({ Left = 0, Top = 2, Right = 0, Bottom = 2 })
     return v, box
 end
 
@@ -191,13 +227,15 @@ local function build()
     ui.faceHold:SetVisibility(1)
     column:AddChildToVerticalBox(ui.faceHold)
     local detail = new("VerticalBox")
+    ui.detail = detail
     -- an enemy with many affinities / locations / long traits can need more room: the panel then shrinks to fit
     local fit = new("ScaleBox")
     ui.fit = fit
     pcall(function() fit:SetStretch(2); fit:SetStretchDirection(1) end)   -- ScaleToFit, DownOnly
     local fitSlot = fit:SetContent(detail)
     pcall(function() fitSlot:SetHorizontalAlignment(1); fitSlot:SetVerticalAlignment(1) end)   -- top left
-    body:AddChildToHorizontalBox(sized(fit, DETAIL_W, LIST_H + 40))
+    -- the whole info side in the game's window frame, like the fast-travel list on the map screen
+    body:AddChildToHorizontalBox(panel(sized(fit, DETAIL_W, DETAIL_H)))
 
     detail:AddChildToVerticalBox(spacer(TOP_PAD))          -- clear of the window frame
     -- name bar like the scan panel's: name, then Lv. and the scanned check on the right
@@ -225,18 +263,52 @@ local function build()
     ui.areaScan = row(areaInfo, SCANNED)
     ui.areaInfo = panel(areaInfo)
     detail:AddChildToVerticalBox(sized(ui.areaInfo, DETAIL_W / 2, nil))
+    -- the world map under them, drawn like the game's map screen: its sea filling the space, the world's island tiles
+    -- centred in it, its vignette and frame on top, and a marker. Textures load one a tick (loadQueuedTile).
+    ui.mapW, ui.mapH = DETAIL_W - 2 * MAP_INSET, MAP_H     -- inset: its frame art clipped into the window's border
+    local wh = math.floor(MAP_H * MAP_WORLD_FILL)
+    local ww = math.floor(wh * worldmap.aspect)
+    ui.world = { x = (ui.mapW - ww) / 2, y = (ui.mapH - wh) / 2, w = ww, h = wh }
+    ui.map = sized(nil, ui.mapW, ui.mapH)
+    pcall(function() ui.map:SetClipping(1) end)          -- tiles reaching past the map's edge are cut off
+    ui.mapCanvas = new("CanvasPanel")
+    ui.map:SetContent(ui.mapCanvas)
+    ui.mapTiles, ui.mapShow, ui.mapQueue, ui.mapQueued = {}, {}, {}, {}   -- queue: jobs in order; queued: tiles in it
+    for _, l in ipairs(MAP_LAYERS) do
+        local img = new("Image")
+        img:SetVisibility(1)                              -- until its texture is in
+        local slot = ui.mapCanvas:AddChildToCanvas(img)
+        slot:SetPosition({ X = 0, Y = 0 }); slot:SetSize({ X = ui.mapW, Y = ui.mapH }); slot:SetZOrder(l.z)
+        ui.mapQueue[#ui.mapQueue + 1] = { img = img, tex = l.tex }
+    end
+    ui.mapMarker = new("Image")
+    local markerTex = game.load(MAP_MARKER_TEX)
+    if markerTex then ui.mapMarker:SetBrushFromTexture(markerTex, false)
+    else ui.mapMarker:SetColorAndOpacity({ R = 1, G = 0.3, B = 0.2, A = 1 }) end
+    ui.mapMarkerSlot = ui.mapCanvas:AddChildToCanvas(ui.mapMarker)
+    ui.mapMarkerSlot:SetSize({ X = MAP_MARKER, Y = MAP_MARKER })
+    ui.mapMarkerSlot:SetZOrder(100)
+    detail:AddChildToVerticalBox(ui.map):SetPadding({ Left = MAP_INSET, Top = 12, Right = 0, Bottom = 0 })
 
+    -- Fixed layout (players saw the panel change size from enemy to enemy: it shrank to fit whatever an entry
+    -- needed): left the sprite with the locations under it, right the stats in a box of fixed height whose text alone
+    -- shrinks for the few entries that need more room (many affinities, statuses and long traits).
     local top = new("HorizontalBox")
     ui.top = top
-    detail:AddChildToVerticalBox(top)
+    detail:AddChildToVerticalBox(sized(top, nil, TOP_H))
+    local leftCol = new("VerticalBox")
+    top:AddChildToHorizontalBox(sized(leftCol, SPRITE, TOP_H))
     ui.spriteBox = sized(nil, SPRITE, SPRITE)
     pcall(function() ui.spriteBox:SetClipping(1) end)    -- ClipToBounds: nothing spills over the text
-    -- top-aligned so the box stays SPRITE x SPRITE: stretched to the stats panel's height, the sprite widget fitted
-    -- the canvas to a box whose height changed with each enemy's text
-    top:AddChildToHorizontalBox(ui.spriteBox):SetVerticalAlignment(1)
+    leftCol:AddChildToVerticalBox(ui.spriteBox)
     top:AddChildToHorizontalBox(sized(nil, 24, nil))
     local info = new("VerticalBox")
-    top:AddChildToHorizontalBox(sized(panel(info), DETAIL_W - SPRITE - 24, nil))
+    ui.infoPanel = info
+    local infoFit = new("ScaleBox")
+    pcall(function() infoFit:SetStretch(2); infoFit:SetStretchDirection(1) end)   -- ScaleToFit, DownOnly
+    local infoSlot = infoFit:SetContent(info)
+    pcall(function() infoSlot:SetHorizontalAlignment(1); infoSlot:SetVerticalAlignment(1) end)   -- top left
+    top:AddChildToHorizontalBox(sized(panel(sized(infoFit, nil, TOP_H - 24)), DETAIL_W - SPRITE - 24, TOP_H))
 
     -- fields in the scan panel's order (DA_BtlLibra); each row has a text value and/or the game's own icon widgets
     ui.affinity, ui.affinityBox = widgetRow(info, "UI_Libra_Resistance")
@@ -268,7 +340,10 @@ local function build()
         ui.conditionWrap:AddChildToWrapBox(w); ui.conditions[i] = w
     end
     info:AddChildToVerticalBox(spacer(6))
-    ui.traits = { row(info, "UI_Libra_1"), row(info, "UI_Libra_2"), row(info, "UI_Libra_3"), row(info, "UI_Libra_4") }
+    ui.traits, ui.traitRows = {}, {}
+    for k, key in ipairs({ "UI_Libra_1", "UI_Libra_2", "UI_Libra_3", "UI_Libra_4" }) do
+        ui.traits[k], ui.traitRows[k] = row(info, key)
+    end
 
     detail:AddChildToVerticalBox(spacer(6))
     local scan = new("HorizontalBox")
@@ -286,15 +361,19 @@ local function build()
     ui.scan = panel(scan)
     detail:AddChildToVerticalBox(ui.scan)
 
-    detail:AddChildToVerticalBox(spacer(6))
     local where = new("VerticalBox")
     where:AddChildToVerticalBox(heading("Locations"))     -- the game has no string for this
     ui.areasScroll = new("ScrollBox")
     where:AddChildToVerticalBox(sized(ui.areasScroll, nil, AREAS_H))
     ui.areas = new("VerticalBox")
-    ui.areasScroll:AddChild(ui.areas)
+    -- smaller text, so enemies found in many places fit (players couldn't see them all, 25 Oct)
+    local areasScale = new("ScaleBox")
+    pcall(function() areasScale:SetStretch(7); areasScale:SetUserSpecifiedScale(AREA_SCALE) end)   -- UserSpecified
+    local areasSlot = areasScale:SetContent(ui.areas)
+    pcall(function() areasSlot:SetHorizontalAlignment(1); areasSlot:SetVerticalAlignment(1) end)   -- top left
+    ui.areasScroll:AddChild(areasScale)
     ui.areasHead = panel(where)                           -- shown / hidden as a whole
-    detail:AddChildToVerticalBox(ui.areasHead)
+    leftCol:AddChildToVerticalBox(ui.areasHead):SetPadding({ Left = 0, Top = 6, Right = 0, Bottom = 0 })
 end
 
 -- data --------------------------------------------------------------------------------------------------------------
@@ -306,7 +385,7 @@ local expanded = {}               -- [area] = true when its enemies are shown
 local shown
 
 local function areaName(key)
-    if key == "?" then return game.libra("UI_Libra_Nodata") or "-" end
+    if key == "?" then return OTHER_PLACES end           -- enemies met somewhere without a place name
     local a = data.areas[key]
     return a and a.table and game.text(a.table, a.key) or key
 end
@@ -326,26 +405,47 @@ local function seenAreasOf(e)
     return out
 end
 
--- areas the list files entry `e` under: where it was seen, plus, if the save already knew it, its data areas the
--- player has visited (all of them if none is marked visited)
-local function groupAreasOf(e)
+-- areas where entry `e` counts as met: where it was seen, plus, if the save already knew it (the mod was installed
+-- mid-game, so it never saw where), its data areas the player has visited. Areas not reached yet never count.
+local function knownAreasOf(e)
     local out = seenAreasOf(e)
     for _, u in ipairs(e.units) do
         local s = store.units[u]
         if s and s.fromSave then
-            local any = false
-            for _, a in ipairs(e.areas) do if store.visited[a] then out[a] = true; any = true end end
-            if not any then for _, a in ipairs(e.areas) do out[a] = true end end
-            if #e.areas == 0 then out["?"] = true end
+            for _, a in ipairs(e.areas) do if store.visited[a] then out[a] = true end end
         end
     end
     return out
 end
 
+-- areas the list files entry `e` under: the known ones. A save-known entry with none of its areas visited (met in a
+-- story event the save doesn't mark as a visit) goes under its own areas: the player has fought it, and a nameless
+-- "-" group of them puzzled players (25 Oct).
+local function groupAreasOf(e)
+    local out = knownAreasOf(e)
+    if next(out) == nil then
+        for _, u in ipairs(e.units) do
+            local s = store.units[u]
+            if s and s.fromSave then
+                for _, a in ipairs(e.areas) do out[a] = true end
+                if #e.areas == 0 then out["?"] = true end
+            end
+        end
+    end
+    return out
+end
+
+-- Units only ever fought before the party has Libra, so they can never be scanned: they count as scanned once met
+-- (players asked for these to be completable, 25 Oct). The prologue's event fights on the Battlefield (their later
+-- versions, the Battlefield's random encounters, Shock Trooper and Iron Giant are "(5章)" chapter-5 units that can
+-- be scanned) and the Earth Shrine boss. From extracted/locations.json: event-only on the Battlefield, plus Belmodar.
+local NO_LIBRA = { [1] = true, [90] = true, [412] = true, [416] = true, [401] = true }
+
 local function isScanned(e)
     if M.showAll then return true end                     -- dev (F7): everything seen and scanned
     for _, u in ipairs(e.units) do
         local r = ui.records[u]; if r and r.IsAnalyzed then return true end
+        if NO_LIBRA[u] and (store.units[u] or (r and (r.defeatNum or 0) > 0)) then return true end
     end
     return false
 end
@@ -442,22 +542,28 @@ local function setSprite(id)
         -- enemy's centre to the box centre. The enemy's outline comes from measuring it as the game draws it
         -- (spriteBox: x0, x1, y0, y1 in sprite pixels from the canvas centre, y down; tools/sprite_measure.py);
         -- without one, from the estimate in spriteSize (tools/sprite_bounds.py).
+        -- The widget stretches the canvas to fill the (square) box: kx, ky box pixels per sprite pixel across and down,
+        -- unequal unless the canvas is square, so the scale below is per axis to undo it. (spriteBox was measured
+        -- assuming one k for both axes, min(kx, ky); fx, fy convert it to true sprite pixels.)
         local b = data.spriteSize[path] or { cw = 256, ch = 256, py = 0, w = 128, h = 128, cy = 64 }
-        local k = math.min(SPRITE / b.cw, SPRITE / b.ch)
+        local kx, ky = SPRITE / b.cw, SPRITE / b.ch
+        local k = math.min(kx, ky)
         local m = data.spriteBox and data.spriteBox[path]
         local bw, bh, cx, cy
-        if m then bw, bh, cx, cy = m[2] - m[1], m[4] - m[3], (m[1] + m[2]) / 2, (m[3] + m[4]) / 2
+        if m then
+            local fx, fy = k / kx, k / ky
+            bw, bh, cx, cy = (m[2] - m[1]) * fx, (m[4] - m[3]) * fy, (m[1] + m[2]) / 2 * fx, (m[3] + m[4]) / 2 * fy
         else bw, bh, cx, cy = b.w, b.h, 0, -(b.py * b.ch + b.cy) end
         local px = math.min(SPRITE_MAX_PX, (m and SPRITE_FILL_MEASURED or SPRITE_FILL) * SPRITE / math.max(bw, bh, 1))
         local vs = viewportScale()                       -- screen px per design px
         -- whole screen pixels per sprite pixel when there is room for 2 or more (sharp); below that the exact fit, as
         -- rounding 1.9 down to 1 would halve the enemy
         if px * vs >= 2 then px = math.floor(px * vs) / vs end
-        local scale, tx, ty = px / k, -px * cx, -px * cy
-        if M.measure then scale, tx, ty = MEASURE_SCALE, 0, 0 end
+        local sx, sy, tx, ty = px / kx, px / ky, -px * cx, -px * cy
+        if M.measure then sx, sy, tx, ty = MEASURE_SCALE, MEASURE_SCALE, 0, 0 end
         M.lastSprite = { path = path, k = k, vs = vs }
         ui.spriteBack:SetBrushColor(M.measure and { R = 1, G = 0, B = 1, A = 1 } or { R = 0, G = 0, B = 0, A = 0 })
-        ui.sprite:SetRenderScale({ X = scale, Y = scale })
+        ui.sprite:SetRenderScale({ X = sx, Y = sy })
         ui.sprite:SetRenderTranslation({ X = tx, Y = ty })
         ui.sprite:SetSsProject(project)
         ui.sprite:SetAutoUpdate(true)
@@ -485,7 +591,8 @@ end
 
 -- every value field: texts set, the game's icon widgets hidden (text-only state: ??? or blank)
 local function fields(value, color)
-    ui.forms:SetVisibility(1)
+    ui.forms:SetVisibility(2)                             -- Hidden: the line keeps its room, so nothing below moves
+    for k = 2, 4 do ui.traitRows[k]:SetVisibility(3) end   -- unscanned: all four rows (???), hidden again once known
     for _, t in ipairs({ ui.affinity, ui.hp, ui.race, ui.resist, ui.traits[1], ui.traits[2], ui.traits[3], ui.traits[4] }) do
         set(t, value, color); t:SetVisibility(4)
     end
@@ -497,6 +604,66 @@ end
 local function blocks(visible)
     ui.top:SetVisibility(visible and 4 or 1); ui.scan:SetVisibility(visible and 4 or 1)
     ui.areaInfo:SetVisibility(visible and 1 or 4)
+    ui.map:SetVisibility(visible and 1 or 4)
+end
+
+-- world map ---------------------------------------------------------------------------------------------------------
+-- put `w` on the map over u0..u1, v0..v1 (map coordinates, 0..1 over the whole world)
+local function mapX(u) return ui.world.x + u * ui.world.w end
+local function mapY(v) return ui.world.y + v * ui.world.h end
+placeOnMap = function(w, u0, v0, u1, v1, z)
+    local slot = ui.mapCanvas:AddChildToCanvas(w)
+    slot:SetPosition({ X = mapX(u0), Y = mapY(v0) })
+    slot:SetSize({ X = mapX(u1) - mapX(u0), Y = mapY(v1) - mapY(v0) })
+    slot:SetZOrder(z or 0)
+    return slot
+end
+
+-- the save's main story progress: some islands' tiles change with it (Olderion before / after the flood, ...)
+local function storyProgress()
+    local ok, p = pcall(function() return game.saveData().Progress.Progress[1] end)
+    return ok and tonumber(p) or 0
+end
+
+-- the islands the game's own map shows at this point of the story (it shows every island, some in a form that
+-- changes with the story: Olderion before / after the flood, Mysidia and the Crystal Tower only later)
+local function tileWanted(t, progress)
+    local c = t.cond
+    return not c or (c.op == "<" and progress < c.progress) or (c.op == ">=" and progress >= c.progress)
+        or (c.op == "==" and progress == c.progress)
+end
+
+local function showMap(area)
+    local progress = storyProgress()
+    for i, t in ipairs(worldmap.tiles) do
+        local want = tileWanted(t, progress)
+        ui.mapShow[i] = want
+        if ui.mapTiles[i] then ui.mapTiles[i]:SetVisibility(want and 4 or 1)
+        elseif want and not ui.mapQueued[i] then ui.mapQueued[i] = true; ui.mapQueue[#ui.mapQueue + 1] = i end
+    end
+    local p = worldmap.areas[area]
+    ui.mapMarker:SetVisibility(p and 4 or 1)
+    if p then ui.mapMarkerSlot:SetPosition({ X = mapX(p.u) - MAP_MARKER / 2, Y = mapY(p.v) - MAP_MARKER / 2 }) end
+end
+
+-- one map tile a tick (1024 x 1024 each), as the faces are loaded
+loadQueuedTile = function()
+    if not ui or not ui.mapQueue then return end
+    local i = table.remove(ui.mapQueue, 1)
+    if not i then return end
+    if type(i) == "table" then                            -- a full-size layer (sea, vignette, frame)
+        local tex = game.load(i.tex)
+        if tex then i.img:SetBrushFromTexture(tex, false); i.img:SetVisibility(4) end
+        return
+    end
+    local t = worldmap.tiles[i]
+    local tex = game.load(t.tex)
+    if not tex then return end
+    local img = new("Image")
+    img:SetBrushFromTexture(tex, false)
+    placeOnMap(img, t.rect[1], t.rect[2], t.rect[3], t.rect[4], t.z)
+    img:SetVisibility(ui.mapShow[i] and 4 or 1)
+    ui.mapTiles[i] = img
 end
 
 local function showHeader(r)
@@ -510,6 +677,8 @@ local function showHeader(r)
     set(ui.areaScan, r.scanned .. " / " .. r.total)
     ui.areasHead:SetVisibility(1)
     ui.areas:ClearChildren()
+    local ok, err = pcall(showMap, r.header)
+    if not ok then log("map: " .. tostring(err)) end
 end
 
 local function showUnknown()
@@ -522,20 +691,28 @@ local function showUnknown()
     ui.areas:ClearChildren()
 end
 
+-- one place name in the locations list (under the sprite, so long names wrap)
+local function areaLine(name, color)
+    local t = text(name, color)
+    pcall(function() t:SetAutoWrapText(true) end)
+    return framed(sized(t, (SPRITE - 2 * PANEL_PAD - 8) / AREA_SCALE - 2 * FRAME_PAD - 8, nil))   -- wraps at the column's width once scaled
+end
+local AREA_PAD = { Left = 4, Top = 2, Right = 0, Bottom = 2 }
+
 local function showLocations(e, id)
     ui.areasHead:SetVisibility(4)
     ui.areas:ClearChildren()
-    local seen, shownAny = seenAreasOf(e), false
+    local seen, shownAny = knownAreasOf(e), false
     for _, a in ipairs(e.areas) do
         local named = data.areas[a] and data.areas[a].table
         if named then
             local k = seen[a]
-            ui.areas:AddChildToVerticalBox(text(k and areaName(a) or UNKNOWN, k and WHITE or DIM)):SetPadding({ Left = 14, Top = 2, Right = 0, Bottom = 2 })
+            ui.areas:AddChildToVerticalBox(areaLine(k and areaName(a) or UNKNOWN, k and WHITE or DIM)):SetPadding(AREA_PAD)
             shownAny = true
         end
     end
     if not shownAny then                                  -- only met in unnamed places (world-map events)
-        ui.areas:AddChildToVerticalBox(text(game.libra("UI_Libra_Nodata") or "-", DIM)):SetPadding({ Left = 14, Top = 2, Right = 0, Bottom = 2 })
+        ui.areas:AddChildToVerticalBox(areaLine(game.libra("UI_Libra_Nodata") or "-", DIM)):SetPadding(AREA_PAD)
     end
     setSprite(id)
 end
@@ -600,9 +777,10 @@ local function showEntry(e)
     set(ui.level, (game.libra("UI_Libra_Level") or "Lv.") .. " " .. tostring(p.Level or "?"))
     if #e.units > 1 then
         ui.forms:SetVisibility(4)
-        set(ui.formsText, string.format("%d / %d", form, #e.units), GREY)    -- forms / phases: confirm shows the next
+        -- forms / phases: confirm shows the next (worded as a prompt: the button glyph and a bare "1 / 2" read as noise)
+        set(ui.formsText, string.format("Next form  (%d / %d)", form, #e.units), GREY)
     else
-        ui.forms:SetVisibility(1)
+        ui.forms:SetVisibility(2)                         -- Hidden, not Collapsed: the layout stays the same
     end
 
     -- Affinities: the game's icons per Weak/Halved/Null/Absorb; before a scan only reactions already seen in battle
@@ -640,7 +818,11 @@ local function showEntry(e)
     else
         set(ui.resist, none)                              -- an empty icon list draws only its underline
     end
-    for k = 2, 4 do set(ui.traits[k], tr[k] or none) end
+    -- traits 2-4 only where the enemy has them (scanned: the count is known; empty "-" rows were clutter)
+    for k = 2, 4 do
+        set(ui.traits[k], tr[k] or none)
+        ui.traitRows[k]:SetVisibility(tr[k] and 3 or 1)
+    end
     for _, it in ipairs(ui.items) do
         if it.widget then
             it.text:SetVisibility(1); it.box:SetVisibility(4)
@@ -913,6 +1095,21 @@ local focusRow                     -- row of the entry widget holding focus (the
 -- UE4SS callbacks running into each other broke its Lua state)
 local pendingConfirm, pendingRefresh, pendingForm
 function M.queueForm(step) pendingForm = step end
+function M.toggleShowAll() M.showAll = not M.showAll; pendingRefresh = true; log("showAll " .. tostring(M.showAll)) end
+-- Q / E while the Bestiary is open: previous / next form, read from the player controller's key state each tick
+-- (a key press, not a hold, pages once)
+local formKeys, keyDown, pc = { { "Q", -1 }, { "E", 1 } }, {}, nil
+function M.pollKeys()
+    if not host then keyDown = {}; return end
+    if not valid(pc) then pc = FindFirstOf("PlayerController") end
+    if not valid(pc) then return end
+    for _, k in ipairs(formKeys) do
+        local ok, down = pcall(function() return pc:IsInputKeyDown({ KeyName = FName(k[1]) }) end)
+        down = ok and down == true
+        if down and not keyDown[k[1]] then pendingForm = k[2] end
+        keyDown[k[1]] = down
+    end
+end
 -- development: show entry after entry in the detail panel (sprite review)
 local devIndex, pendingDev, devTargets = 0, false, nil
 function M.queueDevNext() pendingDev = true end
@@ -971,6 +1168,27 @@ local function closeStrayPopup()
     end
 end
 
+-- Decorate a list row the moment the list hands it a row. Expanding or collapsing an area makes the list build new
+-- entry widgets; decorated only by the next poll (up to 50 ms later) they showed for a frame without their indent,
+-- face and counts (players saw the list "freak out" on expand). Runs on the game thread, inside the list's update.
+local entryHooked = false
+local function hookEntries()
+    if entryHooked then return end
+    entryHooked = true
+    local ok, err = pcall(function()
+        RegisterHook("/Game/UI/MainMenu/Help/Widget/WBP_HelpEntry.WBP_HelpEntry_C:OnListItemObjectSet", function(self, item)
+            if not host or not ui or not ui.entryIcons then return end
+            pcall(function()
+                local w, it = self:get(), item:get()
+                if valid(w) and valid(it) and w:GetFullName():find(game.HOST_PARENT, 1, true) then
+                    decorate(w, it.ItemIndex + 1)
+                end
+            end)
+        end)
+    end)
+    if not ok then log("hook entries: " .. tostring(err)) end
+end
+
 -- called every 100 ms ------------------------------------------------------------------------------------------------
 local builtFor, openAddr, pending, refreshedFor = nil, nil, nil, nil
 function M.poll()
@@ -981,6 +1199,7 @@ function M.poll()
         host, openAddr = h, addr
         local ok, err = pcall(function()
             if builtFor ~= addr then forgetCaches(); build(); builtFor = addr end
+            hookEntries()                                 -- the entry class is loaded now
             pendingForm, pendingConfirm, pendingRefresh = nil, nil, nil   -- input from before it was open
             local here = tracker.currentArea()
             if here then expanded[here] = true end           -- open on the area the player is in
@@ -1003,13 +1222,21 @@ function M.poll()
             for _, en in ipairs(data.entries) do
                 for f, u in ipairs(en.units) do
                     local sp = data.sprites[tostring(u)]
-                    if not M.measure and f == 1 then devTargets[#devTargets + 1] = { en, f }
+                    if not M.measure then devTargets[#devTargets + 1] = { en, f }   -- every form
                     elseif M.measure and sp and not data.spriteBox[sp] and not seen[sp] then
                         seen[sp] = true; devTargets[#devTargets + 1] = { en, f }
                     end
                 end
             end
             log("dev targets: " .. #devTargets)
+        end
+        -- the entry shown by the last step has been laid out since: log its height (to size the panel's parts)
+        if devIndex > 0 then
+            pcall(function()
+                local d, i = ui.detail:GetDesiredSize(), ui.infoPanel:GetDesiredSize()
+                log(string.format("dev layout %d detail %.0f info %.0f forms %s", devIndex, d.Y, i.Y,
+                    tostring(ui.forms:GetVisibility())))
+            end)
         end
         devIndex = devIndex % math.max(#devTargets, 1) + 1
         local t = devTargets[devIndex]
@@ -1027,6 +1254,7 @@ function M.poll()
     end
     if clickTick and ticks - clickTick <= 10 then pcall(closeStrayPopup) end   -- just after a confirm only
     pcall(loadQueuedFaces)
+    pcall(loadQueuedTile)
     local c1 = os.clock()
     focusRow = nil
     local entries = ourEntries()

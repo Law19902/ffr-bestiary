@@ -61,7 +61,7 @@ lists every field's style and whether it needs a scan (`bIsDisplayRequiresAnalys
 - The menu entry is added only when the data pak exists (so installer step 1 is safe); the 20 s start-up fallback
   applies only if no loading screen was seen; one tick closure on the game thread.
 - Screen rebuilt (e.g. after Return to Title): classes / textures / face cache looked up again; a new host is told by
-  full name. Q/E or confirm pressed while closed is dropped on open. Entries met only in unnamed places show "-".
+  full name. Q/E or confirm pressed while closed is dropped on open. Entries met only in unnamed places are listed under "Other".
 - Progress files: unreadable ones kept as .bad; writes go through .tmp and .bak so a failed rename loses nothing.
 - Not changed: the DisplaySceneList append from Lua (works; isolated in game.addMenuEntry); backups accumulate in
   %LOCALAPPDATA%\FFRS-backups (one zip per install run).

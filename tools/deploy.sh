@@ -5,6 +5,6 @@ cd "$(dirname "$0")/.."
 M=/c/Games/FFR-mod/FFRS/Binaries/Win64/ue4ss/Mods/FFRBestiary
 mkdir -p "$M/Scripts"
 cp runtime/FFRBestiary/Scripts/*.lua "$M/Scripts/"
-cp data/bestiary_data.lua "$M/Scripts/"
+cp data/bestiary_data.lua data/worldmap_data.lua "$M/Scripts/"
 touch "$M/dev.txt"                 # development keys on (F7 show all, F3 focus log)
 ls "$M/Scripts"

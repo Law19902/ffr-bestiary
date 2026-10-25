@@ -4,12 +4,12 @@
 # Nexus quarantines .bat/.ps1/.exe).
 set -e
 cd "$(dirname "$0")/.."
-VERSION=0.1.1
+VERSION=0.1.2
 D=dist/FFRBestiary
 M=$D/FFRS/Binaries/Win64/ue4ss/Mods/FFRBestiary
 P=$D/FFRS/Content/Paks/~mods
 rm -rf dist && mkdir -p $M/Scripts "$P"
-cp runtime/FFRBestiary/Scripts/*.lua data/bestiary_data.lua $M/Scripts/
+cp runtime/FFRBestiary/Scripts/*.lua data/bestiary_data.lua data/worldmap_data.lua $M/Scripts/
 printf 'UE4SS loads this mod because this file exists.
 ' > $M/enabled.txt   # no mods.txt edit needed
 cp release/README.txt $M/README.txt

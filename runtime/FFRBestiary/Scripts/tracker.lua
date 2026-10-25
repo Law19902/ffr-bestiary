@@ -27,7 +27,11 @@ end
 local fieldArea
 function M.poll()
     local ids = game.battleEnemies()
-    if not ids then fieldArea = M.currentArea(); store.markVisited(fieldArea); return end
+    if not ids then
+        fieldArea = M.currentArea()
+        if not store.isEventStage(game.location()) then store.markVisited(fieldArea) end
+        return
+    end
     for _, id in ipairs(ids) do store.markSeen(id, fieldArea) end
 end
 
