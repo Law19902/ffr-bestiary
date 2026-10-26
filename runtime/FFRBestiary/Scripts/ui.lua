@@ -871,12 +871,12 @@ local function buildRows()
         for a in pairs(seen) do
             seenIn[a] = seenIn[a] or {}
             seenIn[a][e] = true
-            if not total[a] or a == "?" then                 -- seen somewhere the data doesn't list it
-                members[a] = members[a] or {}
-                local listed = false
-                for _, x in ipairs(members[a]) do if x == e then listed = true end end
-                if not listed then table.insert(members[a], e) end
-            end
+            -- seen somewhere the data doesn't list it: listed there too. Not only areas no entry lists: Poison Flora
+            -- (data: the unnamed quest world map) was met in the Kingdom of Grandshelt, counted 8 but listed 7 (genuse, 26 Oct)
+            members[a] = members[a] or {}
+            local listed = false
+            for _, x in ipairs(members[a]) do if x == e then listed = true end end
+            if not listed then table.insert(members[a], e) end
         end
     end
     local order, inOrder = {}, {}

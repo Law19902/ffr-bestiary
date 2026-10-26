@@ -94,9 +94,13 @@ end
 -- Story-event stages don't count as having been to their area: the save marks them visited, and Gronoa, Research
 -- Center Ruins and the Battlefield showed up for a player who had never been there (25 Oct). They are the cutscene
 -- sets (maps 5000-5999) and the Battlefield, a shared stage for story battles. Enemies met in them still file it.
+-- Map 20000 is a cutscene set too (the prologue's airship deck, "OP用飛空艇・甲板", the one cutscene level outside
+-- 5000-5999): it listed an Airship for players who had never boarded one (RaifRedacted, 25 Oct).
+local OPENING_DECK, OPENING_DECK_AREA = 20000, "name:MAP_NAME_067"
 function M.isEventStage(map)
     map = tonumber(map)
-    return map ~= nil and ((map >= 5000 and map < 6000) or data.mapArea[tostring(map)] == BATTLEFIELD)
+    return map ~= nil and ((map >= 5000 and map < 6000) or map == OPENING_DECK
+        or data.mapArea[tostring(map)] == BATTLEFIELD)
 end
 
 function M.markVisited(area)
@@ -120,9 +124,14 @@ function M.load(slot)
         M.units[tonumber(id)] = { seen = u.seen ~= false, seenAreas = areas, fromSave = u.fromSave == true }
         n = n + 1
     end
-    -- version 1 files counted event stages as visits: their list is rebuilt from the save (seedFromSave) instead
-    if (data.version or 1) >= 2 then
-        for _, a in ipairs(data.visitedAreas or {}) do M.visited[a] = true end
+    -- version 1 files counted event stages as visits: their list is rebuilt from the save (seedFromSave) instead;
+    -- version 2 files counted the prologue's airship deck as a visit to the Airship (seedFromSave adds it back for a
+    -- save that has really been aboard)
+    local version = data.version or 1
+    if version >= 2 then
+        for _, a in ipairs(data.visitedAreas or {}) do
+            if version >= 3 or a ~= OPENING_DECK_AREA then M.visited[a] = true end
+        end
     end
     log("slot " .. slot .. ": loaded " .. n .. " units")
 end
@@ -144,7 +153,7 @@ function M.save(slot, records)
     local f = io.open(tmp, "w")
     if not f then makeDir(); f = io.open(tmp, "w") end
     if not f then log("cannot write " .. tmp); return end
-    f:write(json.encode({ version = 2, slot = slot, units = units, visitedAreas = visited }), "\n"); f:close()
+    f:write(json.encode({ version = 3, slot = slot, units = units, visitedAreas = visited }), "\n"); f:close()
     -- Windows can't rename over a file: move the old one aside first, so a failed rename loses nothing
     local file, bak = path(slot), path(slot) .. ".bak"
     os.remove(bak); os.rename(file, bak)
