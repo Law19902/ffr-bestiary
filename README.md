@@ -11,6 +11,8 @@ battle sprite, and where it can be found, with the world map on each area's page
 > Bug reports and suggestions are very welcome in [Issues](../../issues) or on the
 > [Nexus page](https://www.nexusmods.com/finalfantasyresonance/mods/88).
 
+If you enjoy the mod and want to support more like it: [Patreon](https://www.patreon.com/c/MerkyLAW).
+
 ![Area list](docs/screenshots/1_areas.png)
 ![An enemy page](docs/screenshots/2_goblin.png)
 ![A boss page](docs/screenshots/3_boss.png)
@@ -91,6 +93,10 @@ Full notes for each version are on the [Releases](../../releases) page.
 Developer notes are in [docs/NOTES.md](docs/NOTES.md) and the original design in [docs/SPEC.md](docs/SPEC.md).
 The data tools need the game's files extracted locally (`tools/ffr-dump`, a CUE4Parse dumper; a `.usmap` from
 UE4SS) - nothing extracted is committed. `tools/build_pak.sh` builds the pak, `tools/make_release.sh` the zip.
+
+## Support
+The mod is free and stays free. If you'd like to support it and future mods, I'm on
+[Patreon](https://www.patreon.com/c/MerkyLAW). Bug reports and ideas help just as much.
 
 ## Credits and licence
 - Mod code: MIT licence ([LICENSE](LICENSE)).

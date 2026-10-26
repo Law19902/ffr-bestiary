@@ -49,4 +49,5 @@ CONTROLS IN THE BESTIARY
   enemies with several forms or phases.
 
 Source code and bug reports: https://github.com/Law19902/ffr-bestiary (MIT licence)
+Support the mod and future ones: https://www.patreon.com/c/MerkyLAW
 FINAL FANTASY RESONANCE is (c) SQUARE ENIX. Unofficial fan mod, not affiliated with or endorsed by Square Enix.
