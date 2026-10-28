@@ -6,7 +6,7 @@ A bestiary for **FINAL FANTASY RESONANCE** (Steam, PC). It adds a **Bestiary** p
 you have met, grouped by area, with the game's own scan (Libra) details once you have scanned it, its animated
 battle sprite, and where it can be found, with the world map on each area's page.
 
-**Latest: 0.1.6** (26 Oct 2026), for game version 1.0.1.0. See [What's new](#whats-new).
+**Latest: 0.1.7** (28 Oct 2026), for game version 1.0.1.0. See [What's new](#whats-new).
 
 > Bug reports and suggestions are very welcome in [Issues](../../issues) or on the
 > [Nexus page](https://www.nexusmods.com/finalfantasyresonance/mods/88).
@@ -37,7 +37,7 @@ If you enjoy the mod and want to support more like it: [Patreon](https://www.pat
 - Works with controller and keyboard; uses the game's own fonts, panels and icons
 
 ## Install
-Download `FFRBestiary-0.1.6.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
+Download `FFRBestiary-0.1.7.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
 [Releases](../../releases). There are no scripts or programs in it: you install [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)
 once yourself, then extract the zip into your game folder.
 
@@ -70,6 +70,8 @@ game's own menu table).
 
 ## What's new
 Full notes for each version are on the [Releases](../../releases) page.
+- **0.1.7**: Umbra (burning castle) and Evan count as scanned once met (the game never saves their scan); summon
+  trials and some sidequest fights are listed only where you fought them (Shiva, Titan, Adamandelion).
 - **0.1.6**: sidequest enemies (Poison Flora and others) are listed in the area you met them, not only counted
   there; the opening cutscene's airship deck no longer counts as visiting the Airship.
 - **0.1.5**: recoloured enemies (177 of them) are drawn in their own colours instead of the monster they are based on.

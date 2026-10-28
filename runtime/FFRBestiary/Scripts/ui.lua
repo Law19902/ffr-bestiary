@@ -393,7 +393,11 @@ end
 -- areas where some unit of entry `e` was seen
 local function seenAreasOf(e)
     local out = {}
-    if M.showAll then for _, a in ipairs(e.areas) do out[a] = true end; return out end
+    if M.showAll then
+        for _, a in ipairs(e.areas) do out[a] = true end
+        for _, a in ipairs(e.maybe or {}) do out[a] = true end
+        return out
+    end
     for _, u in ipairs(e.units) do
         local s = store.units[u]
         if s then
@@ -407,6 +411,8 @@ end
 
 -- areas where entry `e` counts as met: where it was seen, plus, if the save already knew it (the mod was installed
 -- mid-game, so it never saw where), its data areas the player has visited. Areas not reached yet never count.
+-- Not its "maybe" areas (a stage several areas lead into): the save can't tell which one it was, so an entry with
+-- only those goes under "Other" until it is met again (Titan was listed under both its places; kkc1190c, 27 Oct).
 local function knownAreasOf(e)
     local out = seenAreasOf(e)
     for _, u in ipairs(e.units) do
@@ -436,7 +442,10 @@ end
 -- (players asked for these to be completable, 25 Oct). The prologue's event fights on the Battlefield (their later
 -- versions, the Battlefield's random encounters, Shock Trooper and Iron Giant are "(5章)" chapter-5 units that can
 -- be scanned) and the Earth Shrine boss. From extracted/locations.json: event-only on the Battlefield, plus Belmodar.
-local NO_LIBRA = { [1] = true, [90] = true, [412] = true, [416] = true, [401] = true }
+-- Also story fights that end in a cutscene, which the save never records (neither scan nor kill: Lyndon's saves have
+-- both at 0 well past them): Umbra in the burning castle (DT_BattleGroup 9001, a scripted loss; sixcandy, 27 Oct)
+-- and Evan (9028; Phruler, 27 Oct).
+local NO_LIBRA = { [1] = true, [90] = true, [412] = true, [416] = true, [401] = true, [400] = true, [414] = true }
 
 local function isScanned(e)
     if M.showAll then return true end                     -- dev (F7): everything seen and scanned
@@ -723,6 +732,12 @@ local function showLocations(e, id)
             shownAny = true
         end
     end
+    for _, a in ipairs(e.maybe or {}) do                  -- "maybe" areas: only where it was met, never as ???
+        if seen[a] and data.areas[a] and data.areas[a].table then
+            ui.areas:AddChildToVerticalBox(areaLine(areaName(a), WHITE)):SetPadding(AREA_PAD)
+            shownAny = true
+        end
+    end
     if not shownAny then                                  -- only met in unnamed places (world-map events)
         ui.areas:AddChildToVerticalBox(areaLine(game.libra("UI_Libra_Nodata") or "-", DIM)):SetPadding(AREA_PAD)
     end
@@ -886,7 +901,8 @@ local function buildRows()
     rows = {}
     for _, a in ipairs(order) do
         local named = a == "?" or (data.areas[a] and data.areas[a].table)
-        if named and (M.showAll or store.visited[a] or seenIn[a]) then
+        -- no header for a place whose enemies are all "maybe" ones not met there yet (Lost Cave: "0 / 0")
+        if named and (M.showAll or store.visited[a] or seenIn[a]) and (members[a] and #members[a] > 0) then
             local list, seenHere = members[a] or {}, seenIn[a] or {}
             local n, sc = 0, 0
             for e in pairs(seenHere) do

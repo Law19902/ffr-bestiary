@@ -4,6 +4,7 @@ Reads extracted/locations.json (tools/build_locations.py) and the dumped tables.
 Writes data/bestiary_data.json:
   entries     one per in-game enemy name (Lyndon, 24 Oct: fold units sharing a name). units[0] is the entry's main
               unit (lowest SortId); areas are area keys. An entry is listed only if some unit in it has an area.
+              maybe: areas reached only through a stage several areas lead into (listed there once seen there)
   areas       area key -> {table, key} of its display name (resolved by the game at runtime)
   mapArea     map id -> area key, for recording where a battle happened (CurrentMapId)
   islandArea  island number (eMapIslandType) -> area key, used when the map is the world map (LastVisitedIsland)
@@ -35,9 +36,16 @@ for uid, v in units.items():
 entries = []
 for name, uids in groups.items():
     uids.sort(key=lambda u: (units[u]['SortId'], u))
-    areas = sorted({a for u in uids for a in locs['enemies'].get(str(u), {}).get('areas', {})})
-    if areas:
-        entries.append({'units': uids, 'areas': areas})
+    kinds = collections.defaultdict(set)
+    for u in uids:
+        for a, k in locs['enemies'].get(str(u), {}).get('areas', {}).items():
+            kinds[a] |= set(k)
+    # an area only reached through a stage several areas lead into (build_locations SHARED) is "maybe": the list
+    # files the entry there only once it is seen there
+    maybe = sorted(a for a, k in kinds.items() if all(x.endswith(g['SHARED']) for x in k))
+    areas = sorted(a for a in kinds if a not in maybe)
+    if areas or maybe:
+        entries.append({'units': uids, 'areas': areas, 'maybe': maybe} if maybe else {'units': uids, 'areas': areas})
 entries.sort(key=lambda e: (units[e['units'][0]]['SortId'], e['units'][0]))
 
 
@@ -50,7 +58,7 @@ def name_ref(aid):
     return {'table': None, 'key': None}           # unnamed map that nothing enters: confirm in game
 
 
-all_areas = sorted({a for e in entries for a in e['areas']})
+all_areas = sorted({a for e in entries for a in e['areas'] + e.get('maybe', [])})
 
 # the runtime reads the island as a number (CPP_MapManager:GetCurrentIslandType); numbers from the class dump
 enum_src = open(X + '/CXXHeaderDump/mucha_enums.hpp', encoding='utf8').read()

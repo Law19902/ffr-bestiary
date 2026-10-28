@@ -75,7 +75,7 @@ function M.seedFromSave(sd, records)
         for _, from in pairs(data.stageArea) do for _, a in ipairs(from) do stagePlaces[a] = true end end
     end
     for _, e in ipairs(data.entries) do
-        local a = #e.areas == 1 and e.areas[1]
+        local a = #e.areas == 1 and not e.maybe and e.areas[1]       -- "maybe" areas: it may have been met there
         if a and not stagePlaces[a] and not M.visited[a] then
             for _, u in ipairs(e.units) do
                 local s = M.units[u]

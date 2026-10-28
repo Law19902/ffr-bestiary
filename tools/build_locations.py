@@ -292,9 +292,15 @@ stage_alias = {}
 for mid in maps:
     if area_of(mid).startswith('map:'):
         stage_alias[area_of(mid)] = named_origin(mid)
+# A stage entered from several areas (summon trials 5200-5206, 5031/5032) stands for only one of them in play: its
+# kinds get SHARED, so the exporter lists the unit there only once it is seen there (Shiva under Rugged Mountain
+# Path, Titan under Mysidia; kkc1190c, 27-28 Oct).
+SHARED = '@stage'
 for gid in list(group_areas):
     for a in [a for a in group_areas[gid] if stage_alias.get(a)]:
         kinds = group_areas[gid].pop(a)
+        if len(stage_alias[a]) > 1:
+            kinds = {k + SHARED for k in kinds}
         for b in stage_alias[a]:
             group_areas[gid][b] |= kinds
 
@@ -365,8 +371,9 @@ while changed:
     for u, called in summons.items():
         for c in called:
             for a, kinds in list(sources.get(u, {}).items()):
-                if 'summon' not in sources[c][a]:
-                    sources[c][a].add('summon'); changed = True     # 'summon' covers mode changes too
+                kind = 'summon' + SHARED if all(k.endswith(SHARED) for k in kinds) else 'summon'
+                if kind not in sources[c][a]:
+                    sources[c][a].add(kind); changed = True     # 'summon' covers mode changes too
 
 # ---------- enemies ----------
 units = {v['ID']: (rk, v) for rk, v in rows(DT + '/Unit/DT_UnitParameter.json').items()}
