@@ -26730,10 +26730,6 @@
    "table": null,
    "key": null
   },
-  "map:5200": {
-   "table": null,
-   "key": null
-  },
   "name:MAP_NAME_012": {
    "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
    "key": "MAP_NAME_012"
@@ -26749,10 +26745,6 @@
   "name:MAP_NAME_021": {
    "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
    "key": "MAP_NAME_021"
-  },
-  "name:MAP_NAME_026": {
-   "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
-   "key": "MAP_NAME_026"
   },
   "name:MAP_NAME_031": {
    "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
@@ -26797,10 +26789,6 @@
   "name:MAP_NAME_041": {
    "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
    "key": "MAP_NAME_041"
-  },
-  "name:MAP_NAME_042": {
-   "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
-   "key": "MAP_NAME_042"
   },
   "name:MAP_NAME_043": {
    "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
@@ -26890,10 +26878,6 @@
    "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
    "key": "MAP_NAME_072"
   },
-  "name:MAP_NAME_075": {
-   "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
-   "key": "MAP_NAME_075"
-  },
   "name:MAP_NAME_080": {
    "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
    "key": "MAP_NAME_080"
@@ -26969,10 +26953,6 @@
   "name:MAP_NAME_165": {
    "table": "/Game/Datatable/Strings/Map/ST_MAP_NAME.ST_MAP_NAME",
    "key": "MAP_NAME_165"
-  },
-  "name:QuestMapWorld": {
-   "table": null,
-   "key": null
   }
  },
  "areaOrder": [
@@ -26982,7 +26962,6 @@
   "name:MAP_NAME_072",
   "name:MAP_NAME_031",
   "name:MAP_NAME_032",
-  "name:MAP_NAME_075",
   "name:MAP_NAME_159",
   "name:MAP_NAME_033",
   "name:MAP_NAME_110",
@@ -27006,7 +26985,6 @@
   "name:MAP_NAME_154",
   "name:MAP_NAME_160",
   "island:MAP_NAME_006",
-  "name:MAP_NAME_042",
   "name:MAP_NAME_082",
   "name:MAP_NAME_043",
   "name:MAP_NAME_044",
@@ -27016,7 +26994,6 @@
   "name:MAP_NAME_156",
   "name:MAP_NAME_155",
   "island:MAP_NAME_007",
-  "name:MAP_NAME_026",
   "map:3170",
   "name:MAP_NAME_048",
   "name:MAP_NAME_049",
@@ -27040,10 +27017,8 @@
   "name:MAP_NAME_165",
   "name:MAP_NAME_058",
   "island:MAP_NAME_010",
-  "name:QuestMapWorld",
   "name:MAP_NAME_060",
   "name:MAP_NAME_067",
-  "map:5200",
   "name:MAP_NAME_065",
   "name:MAP_NAME_128"
  ],
@@ -27057,12 +27032,10 @@
   "island:MAP_NAME_009": 9,
   "island:MAP_NAME_010": 11,
   "map:3170": 7,
-  "map:5200": 99,
   "name:MAP_NAME_012": 1,
   "name:MAP_NAME_013": 1,
   "name:MAP_NAME_017": 4,
   "name:MAP_NAME_021": 5,
-  "name:MAP_NAME_026": 7,
   "name:MAP_NAME_031": 1,
   "name:MAP_NAME_032": 1,
   "name:MAP_NAME_033": 2,
@@ -27074,7 +27047,6 @@
   "name:MAP_NAME_039": 5,
   "name:MAP_NAME_040": 5,
   "name:MAP_NAME_041": 5,
-  "name:MAP_NAME_042": 6,
   "name:MAP_NAME_043": 6,
   "name:MAP_NAME_044": 6,
   "name:MAP_NAME_045": 6,
@@ -27097,7 +27069,6 @@
   "name:MAP_NAME_069": 4,
   "name:MAP_NAME_070": 9,
   "name:MAP_NAME_072": 1,
-  "name:MAP_NAME_075": 1,
   "name:MAP_NAME_080": 9,
   "name:MAP_NAME_082": 6,
   "name:MAP_NAME_110": 2,
@@ -27116,8 +27087,7 @@
   "name:MAP_NAME_162": 8,
   "name:MAP_NAME_163": 8,
   "name:MAP_NAME_164": 9,
-  "name:MAP_NAME_165": 9,
-  "name:QuestMapWorld": 99
+  "name:MAP_NAME_165": 9
  },
  "mapArea": {
   "1000": "name:QuestMapWorld",
@@ -27322,17 +27292,16 @@
    "name:MAP_NAME_067"
   ],
   "5155": [
-   "name:QuestMapWorld"
+   "island:MAP_NAME_001"
   ],
   "5160": [
    "name:MAP_NAME_046"
   ],
   "5200": [
    "island:MAP_NAME_001",
-   "map:5200",
+   "island:MAP_NAME_005",
    "name:MAP_NAME_012",
-   "name:MAP_NAME_075",
-   "name:QuestMapWorld"
+   "name:MAP_NAME_075"
   ],
   "5201": [
    "name:MAP_NAME_016",
@@ -27345,26 +27314,25 @@
   ],
   "5202": [
    "island:MAP_NAME_001",
-   "name:MAP_NAME_026",
-   "name:QuestMapWorld"
+   "name:MAP_NAME_026"
   ],
   "5203": [
+   "island:MAP_NAME_006",
    "name:MAP_NAME_042",
-   "name:MAP_NAME_082",
-   "name:QuestMapWorld"
+   "name:MAP_NAME_082"
   ],
   "5204": [
-   "island:MAP_NAME_010",
-   "name:QuestMapWorld"
+   "island:MAP_NAME_004",
+   "island:MAP_NAME_010"
   ],
   "5205": [
    "island:MAP_NAME_007",
    "name:MAP_NAME_053"
   ],
   "5206": [
+   "island:MAP_NAME_006",
    "name:MAP_NAME_042",
-   "name:MAP_NAME_082",
-   "name:QuestMapWorld"
+   "name:MAP_NAME_082"
   ],
   "5207": [
    "island:MAP_NAME_008"
@@ -27404,12 +27372,6 @@
    ],
    "areas": [
     "island:MAP_NAME_001"
-   ],
-   "maybe": [
-    "map:5200",
-    "name:MAP_NAME_012",
-    "name:MAP_NAME_075",
-    "name:QuestMapWorld"
    ]
   },
   {
@@ -27728,13 +27690,8 @@
    ],
    "areas": [
     "island:MAP_NAME_001",
+    "island:MAP_NAME_005",
     "name:MAP_NAME_033"
-   ],
-   "maybe": [
-    "map:5200",
-    "name:MAP_NAME_012",
-    "name:MAP_NAME_075",
-    "name:QuestMapWorld"
    ]
   },
   {
@@ -28533,13 +28490,7 @@
     2053
    ],
    "areas": [
-    "name:QuestMapWorld"
-   ],
-   "maybe": [
-    "island:MAP_NAME_001",
-    "map:5200",
-    "name:MAP_NAME_012",
-    "name:MAP_NAME_075"
+    "island:MAP_NAME_005"
    ]
   },
   {
@@ -28675,7 +28626,7 @@
     165
    ],
    "areas": [
-    "name:QuestMapWorld"
+    "island:MAP_NAME_009"
    ]
   },
   {
@@ -28912,7 +28863,7 @@
     197
    ],
    "areas": [
-    "name:QuestMapWorld"
+    "island:MAP_NAME_005"
    ]
   },
   {
@@ -29711,11 +29662,8 @@
     305
    ],
    "areas": [
-    "map:3170"
-   ],
-   "maybe": [
     "island:MAP_NAME_007",
-    "name:MAP_NAME_053"
+    "map:3170"
    ]
   },
   {
@@ -30065,21 +30013,16 @@
    "units": [
     452
    ],
-   "areas": [],
-   "maybe": [
-    "name:MAP_NAME_042",
-    "name:MAP_NAME_082",
-    "name:QuestMapWorld"
+   "areas": [
+    "island:MAP_NAME_006"
    ]
   },
   {
    "units": [
     453
    ],
-   "areas": [],
-   "maybe": [
-    "island:MAP_NAME_007",
-    "name:MAP_NAME_053"
+   "areas": [
+    "island:MAP_NAME_007"
    ]
   },
   {
@@ -30095,18 +30038,15 @@
     456
    ],
    "areas": [
-    "name:QuestMapWorld"
+    "island:MAP_NAME_008"
    ]
   },
   {
    "units": [
     457
    ],
-   "areas": [],
-   "maybe": [
-    "island:MAP_NAME_001",
-    "name:MAP_NAME_026",
-    "name:QuestMapWorld"
+   "areas": [
+    "island:MAP_NAME_001"
    ]
   },
   {
@@ -30263,9 +30203,9 @@
     598
    ],
    "areas": [
+    "island:MAP_NAME_001",
     "name:MAP_NAME_033",
-    "name:MAP_NAME_128",
-    "name:QuestMapWorld"
+    "name:MAP_NAME_128"
    ]
   },
   {
@@ -30630,7 +30570,7 @@
     2021
    ],
    "areas": [
-    "name:QuestMapWorld"
+    "island:MAP_NAME_001"
    ]
   },
   {
@@ -30855,13 +30795,8 @@
    "units": [
     2076
    ],
-   "areas": [],
-   "maybe": [
-    "island:MAP_NAME_001",
-    "map:5200",
-    "name:MAP_NAME_012",
-    "name:MAP_NAME_075",
-    "name:QuestMapWorld"
+   "areas": [
+    "island:MAP_NAME_005"
    ]
   },
   {
@@ -30884,10 +30819,8 @@
    "units": [
     2088
    ],
-   "areas": [],
-   "maybe": [
-    "island:MAP_NAME_007",
-    "name:MAP_NAME_053"
+   "areas": [
+    "island:MAP_NAME_007"
    ]
   },
   {

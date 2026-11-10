@@ -185,15 +185,64 @@ def event_ids(o):
             yield from event_ids(x)
 
 
+# Triggers on the shared world sublevels (Wld_GD etc.) belong to no island by level, so they came out as the bare
+# world map ("QuestMapWorld": the summon trials, Poison Flora, Odin's Shadow; kkc1190c / genuse, Oct-Nov). Their
+# trigger box's position says which island they are on: the island whose world-map tile box (DA_MapLandCapture, via
+# extracted/worldmap) holds it, the smallest box when boxes overlap.
+wld_pos = {}                                                # (package, actor) -> (world X, world Y)
+tile_boxes = []                                             # (box area, eMapIslandType, u0, v0, u1, v1)
+WP = X + '/worldmap/worldmap_positions.json'
+# wld_points.jsonl: see extracted/worldmap/build_worldmap.py. wld_capsules.jsonl: the NPCs' (quest symbols') roots,
+#   ffr-dump find FFRS/Content/Map/Wld/ .umap "^CapsuleComponent$" extracted/worldmap/src/wld_capsules.jsonl
+ROOTS = ('RootBoxComponent', 'RootComponent', 'DefaultSceneRoot', 'CollisionCylinder')
+if os.path.exists(WP) and os.path.exists(X + '/worldmap/src/wld_points.jsonl'):
+    for src in ('wld_points.jsonl', 'wld_capsules.jsonl'):
+        if not os.path.exists(X + '/worldmap/src/' + src):
+            continue
+        for l in open(X + '/worldmap/src/' + src, encoding='utf8'):
+            d = json.loads(l)
+            o = d['obj']
+            xyz = (o.get('Properties') or {}).get('RelativeLocation')
+            m = re.match(r"[^']*'[^:']*:PersistentLevel\.([^.']+)'$", (o.get('Outer') or {}).get('ObjectName', ''))
+            if xyz and m and o.get('Name') in ROOTS:
+                wld_pos.setdefault((d['package'], m.group(1)), (xyz['X'], xyz['Y']))
+    for t in json.load(open(WP, encoding='utf8'))['tiles'].values():
+        if t.get('island') and t.get('boxRectUV'):
+            u0, v0, u1, v1 = t['boxRectUV']
+            tile_boxes.append(((u1 - u0) * (v1 - v0), 'eMapIslandType::' + t['island'], u0, v0, u1, v1))
+    tile_boxes.sort()
+
+
+def world_island(package, actor):
+    """island a world-map actor stands on (by its position), or None"""
+    xy = wld_pos.get((package, actor))
+    if not xy:
+        return None
+    u, v = (xy[1] + 23700) / 47400, (25300 - xy[0]) / 49800       # worldmap_positions.json frame.worldToUV
+    return next((isl for _, isl, u0, v0, u1, v1 in tile_boxes if u0 <= u <= u1 and v0 <= v <= v1), None)
+
+
+def is_stage(a):
+    return a.startswith('map:')
+
+
+world_placed = []                                           # (level, actor, island): for the report
 entered_from = collections.defaultdict(set)                 # map id -> areas whose triggers move the player there
 for l in open(X + '/map_events.jsonl', encoding='utf8'):
     d = json.loads(l)
     p = d['obj'].get('Properties', {})
     here = areas_for_package(d['package'])
+    if here == {area_of(WORLD)}:
+        isl = world_island(d['package'], d['name'])
+        if isl in islands:
+            here = {area_of(WORLD, isl)}
+            world_placed.append((stem(d['package']), d['name'], isl))
     for td in p.get('mTransitionDataList') or []:        # events played on arrival at another map
         if td.get('mapId', -1) in maps:
             entered_from[td['mapId']] |= here
         dest = {area_of(td['mapId'])} if td.get('mapId', -1) in maps else here
+        if any(is_stage(a) for a in dest):               # an unnamed cutscene stage: still where the player came from
+            dest = here
         for e in event_ids(td):
             event_areas[e] |= dest
     for e in event_ids({k: v for k, v in p.items() if k != 'mTransitionDataList'}):
@@ -201,9 +250,9 @@ for l in open(X + '/map_events.jsonl', encoding='utf8'):
 for mid, m in maps.items():                                 # events a map row runs (on entry, by progress)
     for e in event_ids(m['raw']):
         event_areas[e].add(area_of(mid))
-for v in events.values():                                   # arrival events on table transitions
+for v in events.values():                                   # arrival events on table transitions (to a stage: in propagate)
     tl = v.get('TransitionLocation') or {}
-    if tl.get('mapId', -1) in maps:
+    if tl.get('mapId', -1) in maps and not is_stage(area_of(tl['mapId'])):
         for e in tl.get('transitionEventList', []) + tl.get('afterTransitionEventList', []):
             if isinstance(e, dict) and e.get('EventId'):
                 event_areas[e['EventId']].add(area_of(tl['mapId']))
@@ -226,10 +275,23 @@ def group_events(g):
         yield from (e for e in event_ids(bundle[g['battleEventId']]) if e in events)
 
 
+# Where an event's follow-ups happen. A move to an unnamed cutscene stage (00Eve_103-109, the generic plain / forest /
+# desert / snowfield sets) keeps the place the event started from: those stages are shared by unrelated events, and
+# taking the stage's every entry point filed Titan under Mysidia and Shiva under Rugged Mountain Path (kkc1190c,
+# 27 Oct - 1 Nov). Only an event whose origin is still unknown after a first pass gets the stage itself
+# (STAGE_FALLBACK, then stage_alias below), so that fallback can't leak into chains whose origin is known.
+STAGE_FALLBACK = False
+
+
 def after(k):
     """where the player is once event k ends: its transition's map, else where it ran"""
     tl = events[k].get('TransitionLocation') or {}
-    return {area_of(tl['mapId'])} if tl.get('mapId', -1) in maps else event_areas[k]
+    if tl.get('mapId', -1) not in maps:
+        return event_areas[k]
+    dest = area_of(tl['mapId'])
+    if not is_stage(dest):
+        return {dest}
+    return event_areas[k] if (event_areas[k] or not STAGE_FALLBACK) else {dest}
 
 
 def propagate():
@@ -241,9 +303,18 @@ def propagate():
             tl = v.get('TransitionLocation') or {}
             if tl.get('mapId', -1) in maps and event_areas[k] - entered_from[tl['mapId']]:
                 entered_from[tl['mapId']] |= event_areas[k]; changed = True
-            for nxt in chained(v):
-                if after(k) - event_areas[nxt]:
-                    event_areas[nxt] |= after(k); changed = True
+            nexts = list(chained(v))
+            if tl.get('mapId', -1) in maps and is_stage(area_of(tl['mapId'])):
+                nexts += [e['EventId'] for e in tl.get('transitionEventList', []) + tl.get('afterTransitionEventList', [])
+                          if isinstance(e, dict) and e.get('EventId')]
+            for nxt in nexts:
+                a = after(k)
+                # the stage fallback fills only events with no place yet: Adamandelion's encounter (an Olderion
+                # world-map NPC) also runs after an unplaced fade to the generic plain stage
+                if STAGE_FALLBACK and all(is_stage(x) for x in a) and any(not is_stage(x) for x in event_areas[nxt]):
+                    continue
+                if a - event_areas[nxt]:
+                    event_areas[nxt] |= a; changed = True
             gid = v.get('encountGroupId', -1)
             if gid in bgroups:
                 new = {a for a in event_areas[k] if a} - set(group_areas[gid])
@@ -274,6 +345,8 @@ for f in glob.glob(DT + '/UI/Colosseum/*.json'):
         if v.get('battleGroupId', -1) not in (-1, 0):
             add_group(v['battleGroupId'], {'colosseum:'}, 'colosseum', '%s %s' % (os.path.basename(f), rk))
 
+propagate()
+STAGE_FALLBACK = True                                       # events nothing places: their stage, resolved below
 propagate()
 
 # unnamed maps (cutscene stages like 00Eve_95) show no place name; a fight there counts for the named area the
@@ -400,7 +473,9 @@ with open(X + '/locations_report.txt', 'w', encoding='utf8') as w:
     unused = sorted(set(encount_tables) - used_tables)
     w.write('encounter tables no actor uses (%d): %s\n' % (len(unused), [os.path.basename(t) for t in unused]))
     kinds = collections.Counter(u['kind'] + ': ' + u['why'].split(' ')[0] for u in unresolved)
-    w.write('unresolved battle sources: %s\n\n' % dict(kinds))
+    w.write('unresolved battle sources: %s\n' % dict(kinds))
+    w.write('shared world-map triggers placed on an island by position: %d (%s)\n\n' % (
+        len(world_placed), dict(collections.Counter(i.split('::')[1] for _, _, i in world_placed))))
     for a in all_areas:
         w.write('AREA %-40s %s\n' % (a, labels[a]))
     w.write('\n')

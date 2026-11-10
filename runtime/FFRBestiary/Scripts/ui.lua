@@ -390,51 +390,42 @@ local function areaName(key)
     return a and a.table and game.text(a.table, a.key) or key
 end
 
--- areas where some unit of entry `e` was seen
-local function seenAreasOf(e)
+-- Listing (10 Nov): every enemy sits under every place the game data puts it, not only where it was met.
+-- Once met anywhere it shows as known in all of them; a place's heading appears once the player has been there.
+-- (Replaces "known only where seen", which left rows ??? after refights from the ReFight Boss mod, fights started
+-- from a place no enemy lists: ProGyGy / ZArkadia, 9-10 Nov.)
+
+local function listable(a) return data.areas[a] ~= nil and data.areas[a].table ~= nil end
+
+-- met: some unit of entry `e` was seen in battle, or the game's save knows it (defeated or scanned)
+local function met(e)
+    if M.showAll then return true end
+    for _, u in ipairs(e.units) do if store.units[u] then return true end end
+    return false
+end
+
+-- places the player has been: visited (tracker, save), where an enemy was met, and the one place of any met enemy
+-- found in a single place. The save never marks the Colosseum, the Battlefield, Zoldaad Castle or the Phantom Train
+-- as visited, so their enemies sat under "Other" on a save well past them (a test save, 10 Nov: 16 entries).
+-- Rebuilt by buildRows.
+local been = {}
+local function placesBeen()
     local out = {}
-    if M.showAll then
-        for _, a in ipairs(e.areas) do out[a] = true end
-        for _, a in ipairs(e.maybe or {}) do out[a] = true end
-        return out
-    end
-    for _, u in ipairs(e.units) do
-        local s = store.units[u]
-        if s then
-            for a in pairs(s.seenAreas) do out[a] = true end
-            -- seen where no area could be named (enemies taken from the save are filed by groupAreasOf instead)
-            if next(s.seenAreas) == nil and not s.fromSave then out["?"] = true end
-        end
+    for a in pairs(store.visited) do out[a] = true end
+    for _, s in pairs(store.units) do for a in pairs(s.seenAreas) do out[a] = true end end
+    for _, e in ipairs(data.entries) do
+        if #e.areas == 1 and met(e) then out[e.areas[1]] = true end
     end
     return out
 end
 
--- areas where entry `e` counts as met: where it was seen, plus, if the save already knew it (the mod was installed
--- mid-game, so it never saw where), its data areas the player has visited. Areas not reached yet never count.
--- Not its "maybe" areas (a stage several areas lead into): the save can't tell which one it was, so an entry with
--- only those goes under "Other" until it is met again (Titan was listed under both its places; kkc1190c, 27 Oct).
-local function knownAreasOf(e)
-    local out = seenAreasOf(e)
-    for _, u in ipairs(e.units) do
-        local s = store.units[u]
-        if s and s.fromSave then
-            for _, a in ipairs(e.areas) do if store.visited[a] then out[a] = true end end
-        end
-    end
-    return out
-end
-
--- areas the list files entry `e` under: the known ones. A save-known entry with none of its areas visited (fought in
--- a story event the save doesn't mark as a visit) goes under "Other": listing it under its data areas named places
--- the player had never been (Arcane Library, 25 Oct).
+-- places the list shows a met entry under: its places the player has been to. A met entry with none of them (fought
+-- in a story event the save doesn't count as a visit) goes under "Other", so the totals always add up to a row.
 local function groupAreasOf(e)
-    local out = knownAreasOf(e)
-    if next(out) == nil then
-        for _, u in ipairs(e.units) do
-            local s = store.units[u]
-            if s and s.fromSave then out["?"] = true end
-        end
-    end
+    local out = {}
+    if not met(e) then return out end
+    for _, a in ipairs(e.areas) do if listable(a) and (M.showAll or been[a]) then out[a] = true end end
+    if next(out) == nil then out["?"] = true end
     return out
 end
 
@@ -444,8 +435,17 @@ end
 -- be scanned) and the Earth Shrine boss. From extracted/locations.json: event-only on the Battlefield, plus Belmodar.
 -- Also story fights that end in a cutscene, which the save never records (neither scan nor kill: Lyndon's saves have
 -- both at 0 well past them): Umbra in the burning castle (DT_BattleGroup 9001, a scripted loss; sixcandy, 27 Oct)
--- and Evan (9028; Phruler, 27 Oct).
-local NO_LIBRA = { [1] = true, [90] = true, [412] = true, [416] = true, [401] = true, [400] = true, [414] = true }
+-- and Evan (9028; Phruler, 27 Oct). Lasswell at Sanctissimus Shrine (9042 / 9043, the same scripted-result flags as
+-- Evan's; both his units appear in no other fight, so it can't be redone): YuukoShionji, 5 Nov, a chapter-6 fight
+-- that stays unscanned after Libra. NOT checked in a save (our test save is not that far yet).
+-- Sephiroth in Whirlpool Hollow (595 and the forms he changes into; every form's SaveId is one of these units): the
+-- save records a defeat for the last form (2520) but no scan for any form, on our test save and kkc1190c's (28 Oct,
+-- "several forms scanned", still unscanned). 10 Nov: one scan should count for all forms; since the game
+-- keeps none, meeting him counts. NOT confirmed which step of the fight loses the scan.
+local NO_LIBRA = { [1] = true, [90] = true, [412] = true, [416] = true, [401] = true, [400] = true, [414] = true,
+    [419] = true, [2069] = true,
+    [595] = true, [2505] = true, [2510] = true, [2511] = true, [2512] = true, [2513] = true, [2514] = true,
+    [2515] = true, [2516] = true, [2517] = true, [2518] = true, [2520] = true, [2521] = true }
 
 local function isScanned(e)
     if M.showAll then return true end                     -- dev (F7): everything seen and scanned
@@ -723,22 +723,15 @@ local AREA_PAD = { Left = 4, Top = 2, Right = 0, Bottom = 2 }
 local function showLocations(e, id)
     ui.areasHead:SetVisibility(4)
     ui.areas:ClearChildren()
-    local seen, shownAny = knownAreasOf(e), false
-    for _, a in ipairs(e.areas) do
-        local named = data.areas[a] and data.areas[a].table
-        if named then
-            local k = seen[a]
+    local shownAny = false
+    for _, a in ipairs(e.areas) do                        -- every place it is found; ??? for places not reached yet
+        if listable(a) then
+            local k = M.showAll or been[a]
             ui.areas:AddChildToVerticalBox(areaLine(k and areaName(a) or UNKNOWN, k and WHITE or DIM)):SetPadding(AREA_PAD)
             shownAny = true
         end
     end
-    for _, a in ipairs(e.maybe or {}) do                  -- "maybe" areas: only where it was met, never as ???
-        if seen[a] and data.areas[a] and data.areas[a].table then
-            ui.areas:AddChildToVerticalBox(areaLine(areaName(a), WHITE)):SetPadding(AREA_PAD)
-            shownAny = true
-        end
-    end
-    if not shownAny then                                  -- only met in unnamed places (world-map events)
+    if not shownAny then                                  -- only found in unnamed places (cutscene stages)
         ui.areas:AddChildToVerticalBox(areaLine(game.libra("UI_Libra_Nodata") or "-", DIM)):SetPadding(AREA_PAD)
     end
     setSprite(id)
@@ -871,47 +864,43 @@ end
 
 -- list --------------------------------------------------------------------------------------------------------------
 local function buildRows()
-    local total, members, seenIn, seenCount, scannedCount = {}, {}, {}, 0, 0
+    been = placesBeen()
+    local members, isMet, seenCount, scannedCount = {}, {}, 0, 0
     for _, e in ipairs(data.entries) do
-        for _, a in ipairs(e.areas) do
-            total[a] = (total[a] or 0) + 1
+        for _, a in ipairs(e.areas) do                    -- every place the game data puts it
             members[a] = members[a] or {}
             table.insert(members[a], e)
         end
-        local seen = groupAreasOf(e)
-        if next(seen) then
+        local where = groupAreasOf(e)
+        if next(where) then
+            isMet[e] = true
             seenCount = seenCount + 1
             if isScanned(e) then scannedCount = scannedCount + 1 end
-        end
-        for a in pairs(seen) do
-            seenIn[a] = seenIn[a] or {}
-            seenIn[a][e] = true
-            -- seen somewhere the data doesn't list it: listed there too. Not only areas no entry lists: Poison Flora
-            -- (data: the unnamed quest world map) was met in the Kingdom of Grandshelt, counted 8 but listed 7 (genuse, 26 Oct)
-            members[a] = members[a] or {}
-            local listed = false
-            for _, x in ipairs(members[a]) do if x == e then listed = true end end
-            if not listed then table.insert(members[a], e) end
+            if where["?"] then                             -- met, but none of its places reached: "Other"
+                members["?"] = members["?"] or {}
+                table.insert(members["?"], e)
+            end
         end
     end
-    local order, inOrder = {}, {}
-    for _, a in ipairs(data.areaOrder) do order[#order + 1] = a; inOrder[a] = true end
-    for a in pairs(seenIn) do if not inOrder[a] then order[#order + 1] = a end end
+    local order = {}
+    for _, a in ipairs(data.areaOrder) do order[#order + 1] = a end
+    order[#order + 1] = "?"
 
     rows = {}
     for _, a in ipairs(order) do
-        local named = a == "?" or (data.areas[a] and data.areas[a].table)
-        -- no header for a place whose enemies are all "maybe" ones not met there yet (Lost Cave: "0 / 0")
-        if named and (M.showAll or store.visited[a] or seenIn[a]) and (members[a] and #members[a] > 0) then
-            local list, seenHere = members[a] or {}, seenIn[a] or {}
+        local list = members[a]
+        local open = a == "?" or (listable(a) and (M.showAll or been[a]))     -- a place appears once reached
+        if open and list and #list > 0 then
             local n, sc = 0, 0
-            for e in pairs(seenHere) do
-                n = n + 1
-                if isScanned(e) then sc = sc + 1 end
+            for _, e in ipairs(list) do
+                if isMet[e] then
+                    n = n + 1
+                    if isScanned(e) then sc = sc + 1 end
+                end
             end
-            rows[#rows + 1] = { header = a, seen = n, scanned = sc, total = math.max(total[a] or 0, #list) }
+            rows[#rows + 1] = { header = a, seen = n, scanned = sc, total = #list }
             if expanded[a] then
-                for _, e in ipairs(list) do rows[#rows + 1] = { entry = e, area = a, known = seenHere[e] == true } end
+                for _, e in ipairs(list) do rows[#rows + 1] = { entry = e, area = a, known = isMet[e] == true } end
             end
         end
     end

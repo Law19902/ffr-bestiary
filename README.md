@@ -6,7 +6,7 @@ A bestiary for **FINAL FANTASY RESONANCE** (Steam, PC). It adds a **Bestiary** p
 you have met, grouped by area, with the game's own scan (Libra) details once you have scanned it, its animated
 battle sprite, and where it can be found, with the world map on each area's page.
 
-**Latest: 0.1.7** (28 Oct 2026), for game version 1.0.1.0. See [What's new](#whats-new).
+**Latest: 0.1.8** (10 Nov 2026), for game version 1.0.1.0. See [What's new](#whats-new).
 
 > Bug reports and suggestions are very welcome in [Issues](../../issues) or on the
 > [Nexus page](https://www.nexusmods.com/finalfantasyresonance/mods/88).
@@ -30,14 +30,16 @@ If you enjoy the mod and want to support more like it: [Patreon](https://www.pat
 - Enemies with several forms or phases: confirm on the enemy steps through them
 - Installing part-way through the game picks up what your save already records (enemies defeated or scanned, areas
   visited, and so where you met them)
-- Enemies only fought before you have Libra (the prologue's, Belmodar) count as scanned once met
+- Every enemy is listed under each place it can be found; once you have met it anywhere it shows in all of them
+- Enemies only fought before you have Libra (the prologue's, Belmodar), and story fights whose scan the game never
+  saves (Umbra, Evan, Lasswell, Sephiroth), count as scanned once met
 - Follows the game's language: the menu entry (Japanese, German, French, Spanish, Korean, Chinese), enemy and place
   names and the scan details. A few labels the game has no text for (Encountered / Scanned, Locations, Next form)
   stay in English
 - Works with controller and keyboard; uses the game's own fonts, panels and icons
 
 ## Install
-Download `FFRBestiary-0.1.7.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
+Download `FFRBestiary-0.1.8.zip` from [Nexus Mods](https://www.nexusmods.com/finalfantasyresonance/mods/88) or
 [Releases](../../releases). There are no scripts or programs in it: you install [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS)
 once yourself, then extract the zip into your game folder.
 
@@ -70,6 +72,10 @@ game's own menu table).
 
 ## What's new
 Full notes for each version are on the [Releases](../../releases) page.
+- **0.1.8**: enemies are listed under every place they can be found and show there once you have met them
+  anywhere (a place appears once you have been there); summon trials and world-map quest fights placed where they
+  happen (Titan, Shiva, Ifrit, Odin's Shadow, Poison Flora, Adamandelion and more); refights from the ReFight Boss mod
+  are listed; Lasswell (chapter 6) and Sephiroth count as scanned once met; works alongside FFR Modding Tools rc.6+.
 - **0.1.7**: Umbra (burning castle) and Evan count as scanned once met (the game never saves their scan); summon
   trials and some sidequest fights are listed only where you fought them (Shiva, Titan, Adamandelion).
 - **0.1.6**: sidequest enemies (Poison Flora and others) are listed in the area you met them, not only counted
