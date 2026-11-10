@@ -435,7 +435,7 @@ end
 -- be scanned) and the Earth Shrine boss. From extracted/locations.json: event-only on the Battlefield, plus Belmodar.
 -- Also story fights that end in a cutscene, which the save never records (neither scan nor kill: Lyndon's saves have
 -- both at 0 well past them): Umbra in the burning castle (DT_BattleGroup 9001, a scripted loss; sixcandy, 27 Oct)
--- and Evan (9028; Phruler, 27 Oct). Lasswell at Sanctissimus Shrine (9042 / 9043, the same scripted-result flags as
+-- and Evan (9028; Phruler, 27 Oct). the chapter-6 boss at Sanctissimus Shrine (units 419 / 2069, groups 9042 / 9043, the same scripted-result flags as
 -- Evan's; both his units appear in no other fight, so it can't be redone): YuukoShionji, 5 Nov, a chapter-6 fight
 -- that stays unscanned after Libra. NOT checked in a save (our test save is not that far yet).
 -- Sephiroth in Whirlpool Hollow (595 and the forms he changes into; every form's SaveId is one of these units): the

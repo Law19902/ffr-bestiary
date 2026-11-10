@@ -32,7 +32,7 @@ If you enjoy the mod and want to support more like it: [Patreon](https://www.pat
   visited, and so where you met them)
 - Every enemy is listed under each place it can be found; once you have met it anywhere it shows in all of them
 - Enemies only fought before you have Libra (the prologue's, Belmodar), and story fights whose scan the game never
-  saves (Umbra, Evan, Lasswell, Sephiroth), count as scanned once met
+  saves (Umbra, Evan, a chapter 6 boss, Sephiroth), count as scanned once met
 - Follows the game's language: the menu entry (Japanese, German, French, Spanish, Korean, Chinese), enemy and place
   names and the scan details. A few labels the game has no text for (Encountered / Scanned, Locations, Next form)
   stay in English
@@ -75,7 +75,7 @@ Full notes for each version are on the [Releases](../../releases) page.
 - **0.1.8**: enemies are listed under every place they can be found and show there once you have met them
   anywhere (a place appears once you have been there); summon trials and world-map quest fights placed where they
   happen (Titan, Shiva, Ifrit, Odin's Shadow, Poison Flora, Adamandelion and more); refights from the ReFight Boss mod
-  are listed; Lasswell (chapter 6) and Sephiroth count as scanned once met; works alongside FFR Modding Tools rc.6+.
+  are listed; a chapter 6 story boss and Sephiroth count as scanned once met; works alongside FFR Modding Tools rc.6+.
 - **0.1.7**: Umbra (burning castle) and Evan count as scanned once met (the game never saves their scan); summon
   trials and some sidequest fights are listed only where you fought them (Shiva, Titan, Adamandelion).
 - **0.1.6**: sidequest enemies (Poison Flora and others) are listed in the area you met them, not only counted
